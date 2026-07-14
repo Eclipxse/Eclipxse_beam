@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eclipxse-beam-v1';
+const CACHE_NAME = 'eclipxse-beam-v3';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.add('./')));

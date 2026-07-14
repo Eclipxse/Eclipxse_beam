@@ -1,8 +1,8 @@
 <div align="center">
   <img src="public/favicon.svg" width="92" alt="Eclipxse Beam logo" />
   <h1>Eclipxse Beam</h1>
-  <p><strong>Send through the veil.</strong></p>
-  <p>A gothic-angelic, private way to send files directly between devices.</p>
+  <p><strong>Move files. Leave nothing behind.</strong></p>
+  <p>A smooth, private way to send files directly between devices.</p>
 
   [![CI](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/ci.yml/badge.svg)](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/ci.yml)
   [![Deploy](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/deploy.yml/badge.svg)](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/deploy.yml)
@@ -62,7 +62,7 @@ Open the displayed local URL in two browser windows or devices. Keep both tabs o
 
 ## Windows desktop app
 
-Eclipxse Beam includes a native Windows edition with an original gothic-angelic interface, custom celestial icon, secure Electron window, and two distribution formats:
+Eclipxse Beam includes a native Windows edition with a compact transfer workspace, smooth motion, a custom eclipse identity, a secure Electron window, and two distribution formats:
 
 - **Installer** — guided setup with Start Menu and optional desktop shortcuts.
 - **Portable** — a single EXE that runs without installation.

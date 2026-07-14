@@ -1,8 +1,8 @@
 {
   "name": "eclipxse-beam",
   "private": true,
-  "version": "0.2.0",
-  "description": "A gothic-angelic, private peer-to-peer file transfer app by Eclipxse.",
+  "version": "0.3.0",
+  "description": "A smooth, private peer-to-peer file transfer app by Eclipxse.",
   "author": "Eclipxse",
   "license": "MIT",
   "homepage": "https://github.com/Eclipxse/Eclipxse_beam",
