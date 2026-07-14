@@ -1,0 +1,37 @@
+name: Bug report
+description: Tell us about something that is not working correctly.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to improve Beam.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Beam on...
+        2. Pair with...
+        3. Select...
+    validations:
+      required: true
+  - type: input
+    id: browsers
+    attributes:
+      label: Browsers and versions
+      placeholder: Chrome 138 on Windows, Safari 19 on iPhone
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, console output, file size, and network setup can help.
