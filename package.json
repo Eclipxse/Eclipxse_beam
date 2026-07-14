@@ -1,11 +1,18 @@
 {
   "name": "eclipxse-beam",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "description": "A gothic-angelic, private peer-to-peer file transfer app by Eclipxse.",
+  "author": "Eclipxse",
+  "license": "MIT",
+  "homepage": "https://github.com/Eclipxse/Eclipxse_beam",
+  "main": "desktop/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "desktop:dir": "npm run build && electron-builder --dir --win",
+    "desktop:build": "npm run build && electron-builder --win nsis portable",
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
@@ -21,8 +28,42 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
     "vitest": "^4.1.10"
+  },
+  "build": {
+    "appId": "com.eclipxse.beam",
+    "productName": "Eclipxse Beam",
+    "copyright": "Copyright © 2026 Eclipxse",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*",
+      "package.json",
+      "LICENSE"
+    ],
+    "win": {
+      "icon": "build/icon.svg",
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "signAndEditExecutable": true
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Eclipxse Beam",
+      "license": "LICENSE"
+    }
   }
 }

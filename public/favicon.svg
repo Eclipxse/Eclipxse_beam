@@ -1,12 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="beam" x1="10" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#bba6ff"/>
-      <stop offset=".52" stop-color="#7c5cff"/>
-      <stop offset="1" stop-color="#51e5ff"/>
+    <radialGradient id="night" cx="50%" cy="35%" r="70%">
+      <stop stop-color="#321b2c"/>
+      <stop offset="1" stop-color="#09070b"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="10" y1="10" x2="54" y2="54">
+      <stop stop-color="#f2e1bc"/>
+      <stop offset=".48" stop-color="#b87591"/>
+      <stop offset="1" stop-color="#d2ad6a"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="18" fill="#0b0a18"/>
-  <path d="M39.7 9.5A23.7 23.7 0 1 0 54 43.7 20 20 0 1 1 39.7 9.5Z" fill="url(#beam)"/>
-  <path d="m39.5 23.5 2.2 6.1 6.1 2.2-6.1 2.2-2.2 6.1-2.2-6.1-6.1-2.2 6.1-2.2 2.2-6.1Z" fill="#fff"/>
+  <rect width="64" height="64" rx="9" fill="url(#night)"/>
+  <rect x="1" y="1" width="62" height="62" rx="8" fill="none" stroke="#d2ad6a" stroke-opacity=".38"/>
+  <ellipse cx="32" cy="14" rx="12" ry="4" fill="none" stroke="#d2ad6a" stroke-width="1.2"/>
+  <path d="M37.7 15.5A19.5 19.5 0 1 0 50 43.7 16.5 16.5 0 1 1 37.7 15.5Z" fill="url(#metal)"/>
+  <path d="m41 25 2.1 5.8L49 33l-5.9 2.1L41 41l-2.1-5.9L33 33l5.9-2.2Z" fill="#f7edda"/>
+  <path d="M32 47v9M28 52h8" fill="none" stroke="#d2ad6a" stroke-linecap="round" stroke-width="1.2"/>
 </svg>

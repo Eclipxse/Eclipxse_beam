@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { BeamLogo } from './components/BeamLogo';
+import { CelestialSeal } from './components/CelestialSeal';
 import { Icon } from './components/Icon';
 import { useBeamPeer } from './hooks/useBeamPeer';
 import {
@@ -73,7 +74,11 @@ export default function App() {
 
   const shareLink = useMemo(() => {
     if (!peerId) return '';
-    const url = new URL(window.location.href);
+    const url = new URL(
+      window.location.protocol === 'file:'
+        ? 'https://eclipxse.github.io/Eclipxse_beam/'
+        : window.location.href,
+    );
     url.search = '';
     url.hash = '';
     url.searchParams.set('peer', peerId);
@@ -142,16 +147,20 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <div className="desktop-titlebar" aria-hidden="true">
+        <span><i /> Eclipxse Beam <em>Desktop</em></span>
+      </div>
       <div className="ambient ambient--one" />
       <div className="ambient ambient--two" />
       <div className="stars" aria-hidden="true" />
+      <div className="cathedral-lines" aria-hidden="true" />
 
       <header className="site-header">
         <BeamLogo />
         <div className="header-actions">
           <span className="privacy-pill">
             <Icon name="lock" size={15} />
-            End-to-end encrypted
+            The veil is encrypted
           </span>
           <a
             className="icon-button"
@@ -167,21 +176,25 @@ export default function App() {
 
       <main>
         <section className="hero">
-          <div className="eyebrow">
-            <Icon name="sparkles" size={16} />
-            Private by design. Delightfully fast.
-          </div>
-          <h1>
-            Your files, <span>beamed.</span>
-          </h1>
-          <p>
-            Send photos, videos, documents, and entire moments directly to another device.
-            No account. No cloud upload. No awkward compression.
-          </p>
-          <div className="hero-points" aria-label="Beam benefits">
-            <span><Icon name="lock" size={16} /> Encrypted</span>
-            <span><Icon name="wifi" size={16} /> Peer-to-peer</span>
-            <span><Icon name="sparkles" size={16} /> Open source</span>
+          <CelestialSeal />
+          <div className="hero-copy">
+            <div className="eyebrow">
+              <span className="eyebrow-star">✦</span>
+              A private passage between worlds
+              <span className="eyebrow-star">✦</span>
+            </div>
+            <h1>
+              Send through<br />the <span>veil.</span>
+            </h1>
+            <p>
+              A sacred little doorway for your files. No account, no cloud vault,
+              no stranger keeping what belongs to you.
+            </p>
+            <div className="hero-points" aria-label="Beam benefits">
+              <span><Icon name="lock" size={16} /> Encrypted</span>
+              <span><Icon name="wifi" size={16} /> Soul to soul</span>
+              <span><Icon name="sparkles" size={16} /> Eclipxse made</span>
+            </div>
           </div>
         </section>
 
@@ -189,8 +202,8 @@ export default function App() {
           <article className="panel pairing-panel">
             <div className="panel-heading">
               <div>
-                <span className="step-number">01</span>
-                <h2>Pair your devices</h2>
+                <span className="step-number">I</span>
+                <h2>Open the passage</h2>
               </div>
               <div className={`status-badge status-badge--${status}`}>
                 <span className="status-badge__dot" />
@@ -257,7 +270,7 @@ export default function App() {
                       )}
                     </div>
                     <div className="pairing-details">
-                      <span className="overline">Your pairing code</span>
+                      <span className="overline">Your celestial cipher</span>
                       <div className="code-row">
                         <code title={peerId}>{peerId ? shortCode(peerId) : 'creating-code'}</code>
                         <button
@@ -270,7 +283,7 @@ export default function App() {
                           <Icon name={copied === 'code' ? 'check' : 'copy'} size={17} />
                         </button>
                       </div>
-                      <p>Scan this QR code on the sending device, or share the private link.</p>
+                      <p>Let the other device scan this seal, or share the private passage.</p>
                       <button
                         className="secondary-button"
                         type="button"
@@ -278,7 +291,7 @@ export default function App() {
                         disabled={!shareLink}
                       >
                         <Icon name={copied === 'link' ? 'check' : 'link'} size={17} />
-                        {copied === 'link' ? 'Link copied' : 'Copy pairing link'}
+                        {copied === 'link' ? 'Passage copied' : 'Copy private passage'}
                       </button>
                     </div>
                   </div>
@@ -288,9 +301,9 @@ export default function App() {
                       <Icon name="link" size={28} />
                     </div>
                     <div>
-                      <span className="overline">Connect to a receiver</span>
-                      <h3>Paste their Beam code</h3>
-                      <p>A pairing link works here too.</p>
+                      <span className="overline">Cross the threshold</span>
+                      <h3>Enter their Beam cipher</h3>
+                      <p>A private passage link works here too.</p>
                     </div>
                     <div className="pairing-input-row">
                       <input
@@ -299,7 +312,7 @@ export default function App() {
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') handleConnect();
                         }}
-                        placeholder="Pairing code or link"
+                        placeholder="Pairing cipher or private link"
                         aria-label="Pairing code or link"
                       />
                       <button type="button" onClick={handleConnect} disabled={status === 'connecting'}>
@@ -316,8 +329,8 @@ export default function App() {
           <article className="panel transfer-panel">
             <div className="panel-heading">
               <div>
-                <span className="step-number">02</span>
-                <h2>Choose what to beam</h2>
+                <span className="step-number">II</span>
+                <h2>Choose your offering</h2>
               </div>
               {selectedFiles.length > 0 && (
                 <span className="selection-summary">
@@ -352,8 +365,8 @@ export default function App() {
               }}
             >
               <span className="drop-zone__icon"><Icon name="upload" size={27} /></span>
-              <strong>{isDragging ? 'Drop to add your files' : 'Drop files anywhere here'}</strong>
-              <span>or click to browse · any file type</span>
+              <strong>{isDragging ? 'Release them into the veil' : 'Lay your files upon the altar'}</strong>
+              <span>or click to browse · every file is welcome</span>
             </button>
 
             {selectedFiles.length > 0 && (
@@ -393,7 +406,7 @@ export default function App() {
               onClick={handleSend}
               disabled={status !== 'connected' || selectedFiles.length === 0 || isSending}
             >
-              <span>{isSending ? 'Beaming…' : status === 'connected' ? 'Beam files now' : 'Pair a device to continue'}</span>
+              <span>{isSending ? 'Crossing the veil...' : status === 'connected' ? 'Send through the veil' : 'Open a passage to continue'}</span>
               <Icon name="send" size={20} />
             </button>
           </article>
@@ -402,8 +415,8 @@ export default function App() {
         <section className="activity-section">
           <div className="activity-heading">
             <div>
-              <span className="overline">This session</span>
-              <h2>Beam activity</h2>
+              <span className="overline">The living archive</span>
+              <h2>Passages made</h2>
             </div>
             <div className="activity-stats">
               <span><strong>{completedCount}</strong> completed</span>
@@ -415,8 +428,8 @@ export default function App() {
             <div className="empty-activity">
               <span><Icon name="sparkles" size={22} /></span>
               <div>
-                <strong>Quiet as moonlight</strong>
-                <p>Your completed and active transfers will appear here.</p>
+                <strong>The chapel is quiet</strong>
+                <p>Your active and completed passages will gather here.</p>
               </div>
             </div>
           ) : (
@@ -454,16 +467,16 @@ export default function App() {
         </section>
 
         <section className="trust-strip">
-          <div><Icon name="lock" size={20} /><span><strong>Encrypted in transit</strong>WebRTC protects every byte.</span></div>
-          <div><Icon name="wifi" size={20} /><span><strong>Direct transfer</strong>Files never touch our server.</span></div>
-          <div><Icon name="github" size={20} /><span><strong>Open source</strong>Inspect, improve, and self-host it.</span></div>
+          <div><Icon name="lock" size={20} /><span><strong>Sealed in transit</strong>WebRTC guards every byte.</span></div>
+          <div><Icon name="wifi" size={20} /><span><strong>No earthly vault</strong>Files never rest on our server.</span></div>
+          <div><Icon name="github" size={20} /><span><strong>Born open</strong>Transparent code, signed Eclipxse.</span></div>
         </section>
       </main>
 
       <footer>
         <BeamLogo compact />
-        <p>Beam files. Leave no cloud behind.</p>
-        <span>Made by Eclipxse · v0.1.0</span>
+        <p>What is yours passes only through your hands.</p>
+        <span>Made by Eclipxse · desktop v0.2.0</span>
       </footer>
     </div>
   );

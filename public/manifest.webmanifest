@@ -1,12 +1,12 @@
 {
   "name": "Eclipxse Beam",
-  "short_name": "Beam",
-  "description": "Private peer-to-peer file sharing with no cloud uploads.",
+  "short_name": "Eclipxse",
+  "description": "Gothic-angelic private peer-to-peer file sharing by Eclipxse.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#090816",
-  "theme_color": "#090816",
+  "background_color": "#080609",
+  "theme_color": "#080609",
   "icons": [
     {
       "src": "favicon.svg",

@@ -1,8 +1,8 @@
 <div align="center">
   <img src="public/favicon.svg" width="92" alt="Eclipxse Beam logo" />
   <h1>Eclipxse Beam</h1>
-  <p><strong>Beam files. Leave no cloud behind.</strong></p>
-  <p>A fast, private, open-source way to send files directly between browsers.</p>
+  <p><strong>Send through the veil.</strong></p>
+  <p>A gothic-angelic, private way to send files directly between devices.</p>
 
   [![CI](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/ci.yml/badge.svg)](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/ci.yml)
   [![Deploy](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/deploy.yml/badge.svg)](https://github.com/Eclipxse/Eclipxse_beam/actions/workflows/deploy.yml)
@@ -59,6 +59,25 @@ npm run dev
 ```
 
 Open the displayed local URL in two browser windows or devices. Keep both tabs open during a transfer.
+
+## Windows desktop app
+
+Eclipxse Beam includes a native Windows edition with an original gothic-angelic interface, custom celestial icon, secure Electron window, and two distribution formats:
+
+- **Installer** — guided setup with Start Menu and optional desktop shortcuts.
+- **Portable** — a single EXE that runs without installation.
+
+Build both executables locally:
+
+```bash
+npm install
+npm run desktop:build
+```
+
+The finished files are written to `release/`. You can also run the **Build Windows EXE** workflow from the repository's Actions tab and download the `Eclipxse-Beam-Windows` artifact.
+
+> [!NOTE]
+> Community builds are not code-signed. Windows SmartScreen may show an “Unknown publisher” warning until the project uses a trusted Windows signing certificate. The product metadata still identifies the application as Eclipxse Beam by Eclipxse.
 
 ### Validate a change
 
