@@ -1,0 +1,336 @@
+import { Theme, Metrics } from "design-tokens.slint";
+
+export component WindowControl inherits Rectangle {
+    in property <string> glyph;
+    in property <bool> danger: false;
+    callback clicked;
+
+    width: 38px;
+    height: 34px;
+    border-radius: Metrics.radius-small;
+    background: touch.has-hover ? (root.danger ? Theme.danger-soft : Theme.surface-hover) : #00000000;
+    animate background { duration: 120ms; easing: ease-out; }
+
+    Text {
+        text: root.glyph;
+        color: touch.has-hover && root.danger ? Theme.danger : Theme.text-muted;
+        font-family: "Segoe UI";
+        font-size: 14px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component NavItem inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <bool> selected: false;
+    callback clicked;
+
+    height: 42px;
+    border-radius: Metrics.radius-small;
+    background: root.selected ? Theme.surface-raised : (touch.has-hover ? Theme.surface : #00000000);
+    border-width: root.selected ? 1px : 0px;
+    border-color: Theme.line-soft;
+    animate background { duration: 140ms; easing: ease-out; }
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 11px;
+        alignment: start;
+
+        Text {
+            width: 18px;
+            text: root.icon;
+            color: root.selected ? Theme.accent : Theme.text-faint;
+            font-family: "Segoe UI Symbol";
+            font-size: 15px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.label;
+            color: root.selected ? Theme.text : Theme.text-muted;
+            font-family: "Segoe UI";
+            font-size: 14px;
+            font-weight: root.selected ? 600 : 500;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component PrimaryButton inherits Rectangle {
+    in property <string> text;
+    in property <string> icon: "";
+    in property <bool> enabled: true;
+    callback clicked;
+
+    height: Metrics.control-height;
+    min-width: 126px;
+    border-radius: Metrics.radius-small;
+    background: !root.enabled ? #5d568f : (touch.pressed ? #7669dd : (touch.has-hover ? Theme.accent-hover : Theme.accent));
+    animate background { duration: 120ms; easing: ease-out; }
+
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        spacing: 8px;
+        alignment: center;
+
+        Text {
+            visible: root.icon != "";
+            text: root.icon;
+            color: #ffffff;
+            font-family: "Segoe UI Symbol";
+            font-size: 15px;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.text;
+            color: #ffffff;
+            font-family: "Segoe UI";
+            font-size: 13px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component GhostButton inherits Rectangle {
+    in property <string> text;
+    in property <string> icon: "";
+    in property <bool> danger: false;
+    callback clicked;
+
+    height: Metrics.control-height;
+    min-width: 112px;
+    border-radius: Metrics.radius-small;
+    border-width: 1px;
+    border-color: root.danger ? #ff718544 : Theme.line;
+    background: touch.pressed ? Theme.surface-hover : (touch.has-hover ? (root.danger ? Theme.danger-soft : Theme.surface-raised) : Theme.surface);
+    animate background { duration: 120ms; easing: ease-out; }
+
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 8px;
+        alignment: center;
+
+        Text {
+            visible: root.icon != "";
+            text: root.icon;
+            color: root.danger ? Theme.danger : Theme.text-muted;
+            font-family: "Segoe UI Symbol";
+            font-size: 14px;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.text;
+            color: root.danger ? Theme.danger : Theme.text;
+            font-family: "Segoe UI";
+            font-size: 13px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component SectionLabel inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> meta: "";
+
+    height: 28px;
+    horizontal-stretch: 1;
+
+    Text {
+        text: root.title;
+        color: Theme.text;
+        font-family: "Segoe UI";
+        font-size: 13px;
+        font-weight: 600;
+        vertical-alignment: center;
+    }
+    Rectangle { horizontal-stretch: 1; }
+    Text {
+        text: root.meta;
+        color: Theme.text-faint;
+        font-family: "Segoe UI";
+        font-size: 12px;
+        vertical-alignment: center;
+    }
+}
+
+export component FileRow inherits Rectangle {
+    in property <string> extension;
+    in property <string> name;
+    in property <string> meta;
+    in property <string> status: "Ready";
+
+    height: 64px;
+    background: Theme.surface;
+    border-radius: Metrics.radius;
+    border-width: 1px;
+    border-color: Theme.line-soft;
+
+    HorizontalLayout {
+        padding: 10px;
+        spacing: 12px;
+
+        Rectangle {
+            width: 42px;
+            height: 42px;
+            border-radius: Metrics.radius-small;
+            background: Theme.accent-soft;
+            Text {
+                text: root.extension;
+                color: Theme.accent-hover;
+                font-family: "Segoe UI";
+                font-size: 10px;
+                font-weight: 700;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        VerticalLayout {
+            spacing: 3px;
+            vertical-stretch: 1;
+            Text {
+                text: root.name;
+                color: Theme.text;
+                font-family: "Segoe UI";
+                font-size: 13px;
+                font-weight: 600;
+                vertical-alignment: bottom;
+                overflow: elide;
+            }
+            Text {
+                text: root.meta;
+                color: Theme.text-faint;
+                font-family: "Segoe UI";
+                font-size: 11px;
+                vertical-alignment: top;
+            }
+        }
+
+        Rectangle { width: 70px;
+            Text {
+                text: root.status;
+                color: Theme.success;
+                font-family: "Segoe UI";
+                font-size: 11px;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+export component ProgressBar inherits Rectangle {
+    in property <float> value: 0.5;
+    height: 5px;
+    border-radius: 3px;
+    background: Theme.line;
+
+    Rectangle {
+        width: parent.width * root.value;
+        height: parent.height;
+        border-radius: 3px;
+        background: Theme.accent;
+        animate width { duration: 220ms; easing: ease-out; }
+    }
+}
+
+export component TransferRow inherits Rectangle {
+    in property <string> extension;
+    in property <string> name;
+    in property <string> detail;
+    in property <string> percentage;
+    in property <float> progress;
+
+    height: 96px;
+    border-radius: Metrics.radius;
+    border-width: 1px;
+    border-color: Theme.line-soft;
+    background: Theme.surface;
+
+    VerticalLayout {
+        padding: 13px;
+        spacing: 10px;
+
+        HorizontalLayout {
+            spacing: 12px;
+            Rectangle {
+                width: 38px;
+                height: 38px;
+                border-radius: Metrics.radius-small;
+                background: Theme.accent-soft;
+                Text {
+                    text: root.extension;
+                    color: Theme.accent-hover;
+                    font-family: "Segoe UI";
+                    font-size: 9px;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            VerticalLayout {
+                spacing: 3px;
+                Text {
+                    text: root.name;
+                    color: Theme.text;
+                    font-family: "Segoe UI";
+                    font-size: 13px;
+                    font-weight: 600;
+                    overflow: elide;
+                    vertical-alignment: bottom;
+                }
+                Text {
+                    text: root.detail;
+                    color: Theme.text-faint;
+                    font-family: "Segoe UI";
+                    font-size: 11px;
+                    vertical-alignment: top;
+                }
+            }
+            Text {
+                width: 42px;
+                text: root.percentage;
+                color: Theme.text-muted;
+                font-family: "Segoe UI";
+                font-size: 12px;
+                font-weight: 600;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+        }
+
+        ProgressBar { value: root.progress; }
+    }
+}

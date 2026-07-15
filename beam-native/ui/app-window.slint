@@ -1,0 +1,965 @@
+import { Theme, Metrics } from "design-tokens.slint";
+import {
+    WindowControl, NavItem, PrimaryButton, GhostButton,
+    SectionLabel, FileRow, ProgressBar, TransferRow
+} from "components.slint";
+
+component BrandMark inherits Rectangle {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: Theme.accent-soft;
+    border-width: 1px;
+    border-color: #8b7cff55;
+
+    Text {
+        text: "◆";
+        color: Theme.accent-hover;
+        font-family: "Segoe UI Symbol";
+        font-size: 12px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+component AppTitleBar inherits Rectangle {
+    callback close-requested;
+    callback minimize-requested;
+    callback maximize-requested;
+    callback drag-requested;
+
+    height: 58px;
+    background: Theme.sidebar;
+    border-width: 0px;
+
+    drag-zone := TouchArea {
+        width: parent.width - 138px;
+        height: parent.height;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                root.drag-requested();
+            }
+        }
+        double-clicked => { root.maximize-requested(); }
+    }
+
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 10px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        spacing: 10px;
+
+        BrandMark { }
+        Text {
+            text: "Eclipxse Beam";
+            color: Theme.text;
+            font-family: "Segoe UI";
+            font-size: 13px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Rectangle {
+            width: 132px;
+            HorizontalLayout {
+                spacing: 4px;
+                WindowControl {
+                    glyph: "−";
+                    clicked => { root.minimize-requested(); }
+                }
+                WindowControl {
+                    glyph: "□";
+                    clicked => { root.maximize-requested(); }
+                }
+                WindowControl {
+                    glyph: "×";
+                    danger: true;
+                    clicked => { root.close-requested(); }
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        width: parent.width;
+        background: Theme.line-soft;
+    }
+}
+
+component AppSidebar inherits Rectangle {
+    in property <int> current-view: 0;
+    callback navigate(int);
+
+    width: 218px;
+    background: Theme.sidebar;
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 8px;
+
+        Text {
+            height: 28px;
+            text: "WORKSPACE";
+            color: Theme.text-faint;
+            font-family: "Segoe UI";
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.4px;
+            vertical-alignment: center;
+        }
+
+        NavItem {
+            icon: "↑";
+            label: "Send";
+            selected: root.current-view == 0;
+            clicked => { root.navigate(0); }
+        }
+        NavItem {
+            icon: "↓";
+            label: "Receive";
+            selected: root.current-view == 1;
+            clicked => { root.navigate(1); }
+        }
+        NavItem {
+            icon: "↗";
+            label: "Transfer";
+            selected: root.current-view == 2;
+            clicked => { root.navigate(2); }
+        }
+
+        Rectangle { vertical-stretch: 1; }
+
+        Rectangle {
+            height: 82px;
+            border-radius: Metrics.radius;
+            background: Theme.surface;
+            border-width: 1px;
+            border-color: Theme.line-soft;
+
+            VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    Rectangle {
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 4px;
+                        background: Theme.success;
+                    }
+                    Text {
+                        text: "Ready to beam";
+                        color: Theme.text;
+                        font-family: "Segoe UI";
+                        font-size: 12px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                    }
+                }
+                Text {
+                    text: "Encrypted · Local network";
+                    color: Theme.text-faint;
+                    font-family: "Segoe UI";
+                    font-size: 10px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        NavItem {
+            icon: "⚙";
+            label: "Settings";
+        }
+    }
+
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px;
+        height: parent.height;
+        background: Theme.line-soft;
+    }
+}
+
+component PageHeading inherits HorizontalLayout {
+    in property <string> eyebrow;
+    in property <string> title;
+    in property <string> subtitle;
+    in property <string> badge: "";
+
+    height: 56px;
+    spacing: 14px;
+
+    VerticalLayout {
+        spacing: 4px;
+        Text {
+            text: root.eyebrow;
+            color: Theme.accent-hover;
+            font-family: "Segoe UI";
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            vertical-alignment: bottom;
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                text: root.title;
+                color: Theme.text;
+                font-family: "Segoe UI";
+                font-size: 22px;
+                font-weight: 650;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                visible: root.badge != "";
+                width: 70px;
+                height: 24px;
+                border-radius: 12px;
+                background: Theme.accent-soft;
+                Text {
+                    text: root.badge;
+                    color: Theme.accent-hover;
+                    font-family: "Segoe UI";
+                    font-size: 10px;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+    Rectangle { horizontal-stretch: 1; }
+    Text {
+        width: 310px;
+        text: root.subtitle;
+        color: Theme.text-muted;
+        font-family: "Segoe UI";
+        font-size: 12px;
+        horizontal-alignment: right;
+        vertical-alignment: center;
+    }
+}
+
+component DropZone inherits Rectangle {
+    callback choose-files;
+
+    height: 208px;
+    border-radius: Metrics.radius-large;
+    border-width: 1px;
+    border-color: drop-touch.has-hover ? #8b7cff88 : Theme.line;
+    background: drop-touch.has-hover ? #8b7cff10 : Theme.surface;
+    animate background { duration: 160ms; easing: ease-out; }
+    animate border-color { duration: 160ms; easing: ease-out; }
+
+    VerticalLayout {
+        padding: 22px;
+        spacing: 11px;
+        alignment: center;
+
+        HorizontalLayout {
+            height: 50px;
+            alignment: center;
+            Rectangle {
+                width: 50px;
+                height: 50px;
+                border-radius: 15px;
+                background: Theme.accent-soft;
+                border-width: 1px;
+                border-color: #8b7cff44;
+                Text {
+                    text: "+";
+                    color: Theme.accent-hover;
+                    font-family: "Segoe UI";
+                    font-size: 24px;
+                    font-weight: 300;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        Text {
+            text: "Drop files here";
+            color: Theme.text;
+            font-family: "Segoe UI";
+            font-size: 16px;
+            font-weight: 600;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: "or click to browse from your computer";
+            color: Theme.text-muted;
+            font-family: "Segoe UI";
+            font-size: 11px;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: "No size limit · Files stay on your devices";
+            color: Theme.text-faint;
+            font-family: "Segoe UI";
+            font-size: 10px;
+            horizontal-alignment: center;
+        }
+    }
+
+    drop-touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.choose-files(); }
+    }
+}
+
+component DeviceCard inherits Rectangle {
+    in property <bool> selected: true;
+
+    height: 130px;
+    border-radius: Metrics.radius;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: root.selected ? #8b7cff66 : Theme.line-soft;
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 14px;
+
+        HorizontalLayout {
+            spacing: 12px;
+            Rectangle {
+                width: 42px;
+                height: 42px;
+                border-radius: 13px;
+                background: Theme.accent-soft;
+                Text {
+                    text: "▯";
+                    color: Theme.accent-hover;
+                    font-family: "Segoe UI Symbol";
+                    font-size: 20px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            VerticalLayout {
+                spacing: 3px;
+                Text {
+                    text: "iPhone";
+                    color: Theme.text;
+                    font-family: "Segoe UI";
+                    font-size: 14px;
+                    font-weight: 600;
+                    vertical-alignment: bottom;
+                }
+                Text {
+                    text: "Safari · Nearby";
+                    color: Theme.text-faint;
+                    font-family: "Segoe UI";
+                    font-size: 10px;
+                    vertical-alignment: top;
+                }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            Rectangle {
+                width: 8px;
+                height: 8px;
+                border-radius: 4px;
+                background: Theme.success;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 7px;
+            Text {
+                text: "✓";
+                color: Theme.success;
+                font-family: "Segoe UI Symbol";
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+            Text {
+                text: "Selected for this transfer";
+                color: Theme.text-muted;
+                font-family: "Segoe UI";
+                font-size: 10px;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+component PrivacyCard inherits Rectangle {
+    height: 138px;
+    border-radius: Metrics.radius;
+    background: #101218;
+    border-width: 1px;
+    border-color: Theme.line-soft;
+
+    VerticalLayout {
+        padding: 15px;
+        spacing: 10px;
+        Text {
+            text: "Private by design";
+            color: Theme.text;
+            font-family: "Segoe UI";
+            font-size: 12px;
+            font-weight: 600;
+        }
+        Text {
+            text: "Files move directly between devices. Nothing is uploaded to a cloud drive.";
+            color: Theme.text-muted;
+            font-family: "Segoe UI";
+            font-size: 10px;
+            wrap: word-wrap;
+        }
+        HorizontalLayout {
+            spacing: 7px;
+            Text {
+                text: "⌁";
+                color: Theme.success;
+                font-family: "Segoe UI Symbol";
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+            Text {
+                text: "End-to-end encrypted session";
+                color: Theme.text-faint;
+                font-family: "Segoe UI";
+                font-size: 10px;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+component SendView inherits Rectangle {
+    callback start-transfer;
+
+    background: Theme.canvas;
+    VerticalLayout {
+        padding: 28px;
+        spacing: 18px;
+
+        PageHeading {
+            eyebrow: "SEND";
+            title: "Choose what to beam";
+            subtitle: "Fast local transfer with a clean handoff.";
+        }
+
+        HorizontalLayout {
+            spacing: 18px;
+            vertical-stretch: 1;
+
+            VerticalLayout {
+                spacing: 12px;
+                horizontal-stretch: 1;
+                max-width: 10000px;
+                DropZone { }
+                SectionLabel { title: "Selected files"; meta: "3 files · 248 MB"; }
+                FileRow {
+                    extension: "MOV";
+                    name: "Midnight in Kyoto.mov";
+                    meta: "184.2 MB · Video";
+                }
+                FileRow {
+                    extension: "ZIP";
+                    name: "Brand assets.zip";
+                    meta: "63.8 MB · Archive";
+                }
+            }
+
+            VerticalLayout {
+                spacing: 12px;
+                preferred-width: 400px;
+                min-width: 360px;
+                max-width: 400px;
+                horizontal-stretch: 0;
+                SectionLabel { title: "Nearby device"; meta: "1 found"; }
+                DeviceCard { }
+                PrivacyCard { }
+                Rectangle { vertical-stretch: 1; }
+            }
+        }
+
+        Rectangle {
+            height: 68px;
+            border-radius: Metrics.radius;
+            background: Theme.surface-raised;
+            border-width: 1px;
+            border-color: Theme.line;
+
+            HorizontalLayout {
+                padding: 12px;
+                spacing: 14px;
+                VerticalLayout {
+                    spacing: 2px;
+                    Text {
+                        text: "Ready to send";
+                        color: Theme.text;
+                        font-family: "Segoe UI";
+                        font-size: 12px;
+                        font-weight: 600;
+                        vertical-alignment: bottom;
+                    }
+                    Text {
+                        text: "3 files to iPhone";
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 10px;
+                        vertical-alignment: top;
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                GhostButton { text: "Clear"; min-width: 92px; }
+                PrimaryButton {
+                    text: "Beam files";
+                    icon: "→";
+                    clicked => { root.start-transfer(); }
+                }
+            }
+        }
+    }
+}
+
+component StepRow inherits HorizontalLayout {
+    in property <string> number;
+    in property <string> title;
+    in property <string> body;
+    height: 46px;
+    spacing: 12px;
+
+    Rectangle {
+        width: 28px;
+        height: 28px;
+        border-radius: 9px;
+        background: Theme.surface-raised;
+        border-width: 1px;
+        border-color: Theme.line;
+        Text {
+            text: root.number;
+            color: Theme.accent-hover;
+            font-family: "Segoe UI";
+            font-size: 10px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    VerticalLayout {
+        spacing: 3px;
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-family: "Segoe UI";
+            font-size: 12px;
+            font-weight: 600;
+            vertical-alignment: bottom;
+        }
+        Text {
+            text: root.body;
+            color: Theme.text-faint;
+            font-family: "Segoe UI";
+            font-size: 10px;
+            vertical-alignment: top;
+        }
+    }
+}
+
+component ReceiveView inherits Rectangle {
+    background: Theme.canvas;
+
+    VerticalLayout {
+        padding: 28px;
+        spacing: 18px;
+
+        PageHeading {
+            eyebrow: "RECEIVE";
+            title: "Connect your phone";
+            subtitle: "Scan once. Your browser handles the rest.";
+            badge: "LIVE";
+        }
+
+        HorizontalLayout {
+            spacing: 18px;
+            vertical-stretch: 1;
+
+            Rectangle {
+                horizontal-stretch: 1;
+                max-width: 10000px;
+                border-radius: Metrics.radius-large;
+                background: Theme.surface;
+                border-width: 1px;
+                border-color: Theme.line;
+
+                VerticalLayout {
+                    padding: 22px;
+                    spacing: 14px;
+                    alignment: center;
+
+                    HorizontalLayout {
+                        height: 226px;
+                        alignment: center;
+                        Rectangle {
+                            width: 226px;
+                            height: 226px;
+                            border-radius: 14px;
+                            background: #ffffff;
+                            Image {
+                                x: 13px;
+                                y: 13px;
+                                width: 200px;
+                                height: 200px;
+                                source: @image-url("assets/pairing-qr.png");
+                                image-fit: contain;
+                            }
+                        }
+                    }
+                    Text {
+                        text: "Scan with your phone camera";
+                        color: Theme.text;
+                        font-family: "Segoe UI";
+                        font-size: 14px;
+                        font-weight: 600;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: "Keep this window open while connecting";
+                        color: Theme.text-muted;
+                        font-family: "Segoe UI";
+                        font-size: 10px;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            VerticalLayout {
+                preferred-width: 400px;
+                min-width: 360px;
+                max-width: 400px;
+                horizontal-stretch: 0;
+                spacing: 14px;
+
+                Rectangle {
+                    height: 106px;
+                    border-radius: Metrics.radius;
+                    background: Theme.surface;
+                    border-width: 1px;
+                    border-color: Theme.line-soft;
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 8px;
+                        Text {
+                            text: "PAIRING CODE";
+                            color: Theme.text-faint;
+                            font-family: "Segoe UI";
+                            font-size: 9px;
+                            font-weight: 700;
+                            letter-spacing: 1.2px;
+                        }
+                        HorizontalLayout {
+                            spacing: 12px;
+                            Text {
+                                text: "7K9A-2F";
+                                color: Theme.text;
+                                font-family: "Consolas";
+                                font-size: 20px;
+                                font-weight: 600;
+                                letter-spacing: 1.4px;
+                                vertical-alignment: center;
+                            }
+                            Rectangle { horizontal-stretch: 1; }
+                            Text {
+                                text: "Copy";
+                                color: Theme.accent-hover;
+                                font-family: "Segoe UI";
+                                font-size: 11px;
+                                font-weight: 600;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    height: 224px;
+                    border-radius: Metrics.radius;
+                    background: #101218;
+                    border-width: 1px;
+                    border-color: Theme.line-soft;
+                    VerticalLayout {
+                        padding: 16px;
+                        spacing: 8px;
+                        Text {
+                            height: 28px;
+                            text: "How it works";
+                            color: Theme.text;
+                            font-family: "Segoe UI";
+                            font-size: 13px;
+                            font-weight: 600;
+                        }
+                        StepRow { number: "1"; title: "Scan the code"; body: "Open the secure Beam page."; }
+                        StepRow { number: "2"; title: "Choose your files"; body: "Pick anything from your phone."; }
+                        StepRow { number: "3"; title: "Accept here"; body: "Confirm the incoming transfer."; }
+                    }
+                }
+
+                PrivacyCard { height: 124px; }
+                Rectangle { vertical-stretch: 1; }
+            }
+        }
+
+        Rectangle {
+            height: 62px;
+            border-radius: Metrics.radius;
+            background: Theme.success-soft;
+            border-width: 1px;
+            border-color: #68d7a133;
+            HorizontalLayout {
+                padding: 13px;
+                spacing: 10px;
+                Rectangle {
+                    width: 9px;
+                    height: 9px;
+                    border-radius: 5px;
+                    background: Theme.success;
+                }
+                Text {
+                    text: "Waiting for a device";
+                    color: Theme.text;
+                    font-family: "Segoe UI";
+                    font-size: 12px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                Text {
+                    text: "eclipxse.github.io/Eclipxse_beam";
+                    color: Theme.text-faint;
+                    font-family: "Segoe UI";
+                    font-size: 10px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+component StatCard inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <string> detail;
+    height: 96px;
+    border-radius: Metrics.radius;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: Theme.line-soft;
+
+    VerticalLayout {
+        padding: 13px;
+        spacing: 5px;
+        Text {
+            text: root.label;
+            color: Theme.text-faint;
+            font-family: "Segoe UI";
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        Text {
+            text: root.value;
+            color: Theme.text;
+            font-family: "Segoe UI";
+            font-size: 19px;
+            font-weight: 650;
+        }
+        Text {
+            text: root.detail;
+            color: Theme.text-muted;
+            font-family: "Segoe UI";
+            font-size: 10px;
+        }
+    }
+}
+
+component TransferView inherits Rectangle {
+    in-out property <bool> paused: false;
+    background: Theme.canvas;
+
+    VerticalLayout {
+        padding: 28px;
+        spacing: 18px;
+
+        PageHeading {
+            eyebrow: "ACTIVE TRANSFER";
+            title: root.paused ? "Transfer paused" : "Sending to iPhone";
+            subtitle: root.paused ? "Your progress is saved." : "Keep both devices nearby until complete.";
+            badge: root.paused ? "PAUSED" : "LIVE";
+        }
+
+        Rectangle {
+            height: 112px;
+            border-radius: Metrics.radius-large;
+            background: Theme.surface-raised;
+            border-width: 1px;
+            border-color: #8b7cff44;
+
+            VerticalLayout {
+                padding: 18px;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: root.paused ? "Paused at 164.2 MB" : "164.2 MB of 248 MB";
+                        color: Theme.text;
+                        font-family: "Segoe UI";
+                        font-size: 15px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text {
+                        text: "66%";
+                        color: Theme.accent-hover;
+                        font-family: "Segoe UI";
+                        font-size: 14px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                }
+                ProgressBar { value: 0.66; height: 7px; }
+                HorizontalLayout {
+                    Text {
+                        text: root.paused ? "Resume when you're ready" : "38.4 MB/s";
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 10px;
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text {
+                        text: root.paused ? "—" : "About 3 seconds left";
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 10px;
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 18px;
+            vertical-stretch: 1;
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                max-width: 10000px;
+                spacing: 12px;
+                SectionLabel { title: "Transfer queue"; meta: "2 of 3 files"; }
+                TransferRow {
+                    extension: "MOV";
+                    name: "Midnight in Kyoto.mov";
+                    detail: "184.2 MB · Sending now";
+                    percentage: "78%";
+                    progress: 0.78;
+                }
+                TransferRow {
+                    extension: "ZIP";
+                    name: "Brand assets.zip";
+                    detail: "63.8 MB · Waiting";
+                    percentage: "0%";
+                    progress: 0;
+                }
+                FileRow {
+                    extension: "PNG";
+                    name: "beam-cover.png";
+                    meta: "612 KB · Completed";
+                    status: "Done";
+                }
+                Rectangle { vertical-stretch: 1; }
+            }
+
+            VerticalLayout {
+                preferred-width: 400px;
+                min-width: 360px;
+                max-width: 400px;
+                horizontal-stretch: 0;
+                spacing: 12px;
+                SectionLabel { title: "Session"; meta: "Encrypted"; }
+                DeviceCard { height: 110px; }
+                HorizontalLayout {
+                    spacing: 10px;
+                    StatCard { height: 80px; horizontal-stretch: 1; label: "SPEED"; value: root.paused ? "—" : "38.4"; detail: "MB per second"; }
+                    StatCard { height: 80px; horizontal-stretch: 1; label: "ELAPSED"; value: "00:06"; detail: "of about 00:09"; }
+                }
+                PrivacyCard { height: 110px; }
+                Rectangle { vertical-stretch: 1; }
+            }
+        }
+
+        HorizontalLayout {
+            height: 44px;
+            spacing: 10px;
+            Rectangle { horizontal-stretch: 1; }
+            GhostButton {
+                text: "Cancel";
+                danger: true;
+            }
+            PrimaryButton {
+                text: root.paused ? "Resume" : "Pause";
+                icon: root.paused ? "▶" : "Ⅱ";
+                clicked => { root.paused = !root.paused; }
+            }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    in-out property <int> current-view: 0;
+    callback close-requested;
+    callback minimize-requested;
+    callback maximize-requested;
+    callback drag-requested;
+    callback center-requested;
+
+    title: "Eclipxse Beam";
+    no-frame: true;
+    resize-border-width: 7px;
+    background: Theme.canvas;
+    preferred-width: 1180px;
+    preferred-height: 760px;
+    min-width: 980px;
+    min-height: 680px;
+    default-font-family: "Segoe UI";
+    default-font-size: 12px;
+
+    VerticalLayout {
+        spacing: 0px;
+
+        AppTitleBar {
+            close-requested => { root.close-requested(); }
+            minimize-requested => { root.minimize-requested(); }
+            maximize-requested => { root.maximize-requested(); }
+            drag-requested => { root.drag-requested(); }
+        }
+
+        HorizontalLayout {
+            spacing: 0px;
+            vertical-stretch: 1;
+
+            AppSidebar {
+                current-view: root.current-view;
+                navigate(view) => { root.current-view = view; }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+                background: Theme.canvas;
+
+                if root.current-view == 0 : SendView {
+                    start-transfer => { root.current-view = 2; }
+                }
+                if root.current-view == 1 : ReceiveView { }
+                if root.current-view == 2 : TransferView { }
+            }
+        }
+    }
+
+    init => { root.center-requested(); }
+}

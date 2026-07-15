@@ -13,6 +13,8 @@
     "build": "tsc --noEmit && vite build",
     "desktop:dir": "npm run build && electron-builder --dir --win",
     "desktop:build": "npm run build && electron-builder --win nsis portable",
+    "native:dev": "cargo run --manifest-path beam-native/Cargo.toml",
+    "native:check": "cargo check --manifest-path beam-native/Cargo.toml",
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",

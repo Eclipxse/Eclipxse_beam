@@ -1,0 +1,20 @@
+[package]
+name = "eclipxse-beam-native"
+version = "0.1.0"
+edition = "2024"
+description = "Native Slint desktop prototype for Eclipxse Beam"
+license = "MIT"
+repository = "https://github.com/Eclipxse/Eclipxse_beam"
+build = "build.rs"
+
+[dependencies]
+image = { version = "0.25", default-features = false, features = ["png"] }
+slint = { version = "~1.17.1", features = ["unstable-winit-030"] }
+
+[build-dependencies]
+slint-build = "~1.17.1"
+
+[profile.release]
+lto = "thin"
+opt-level = "s"
+strip = true
