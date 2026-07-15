@@ -17,6 +17,8 @@ interface PendingFile {
   receivedBytes: number;
 }
 
+type ConnectionSerialization = 'default' | 'raw';
+
 interface UseBeamPeerOptions {
   deviceName: string;
   onTransferUpdate: (update: TransferUpdate) => void;
@@ -46,6 +48,7 @@ export function useBeamPeer({ deviceName, onTransferUpdate }: UseBeamPeerOptions
   const peerRef = useRef<Peer | null>(null);
   const connectionRef = useRef<DataConnection | null>(null);
   const pendingFilesRef = useRef(new Map<string, PendingFile>());
+  const activeRawTransferRef = useRef<string | null>(null);
   const updateCallbackRef = useRef(onTransferUpdate);
   const deviceNameRef = useRef(deviceName);
 
@@ -61,11 +64,104 @@ export function useBeamPeer({ deviceName, onTransferUpdate }: UseBeamPeerOptions
     connectionRef.current?.close();
     connectionRef.current = null;
     pendingFilesRef.current.clear();
+    activeRawTransferRef.current = null;
     setRemoteDeviceName('Nearby device');
     setStatus(peerRef.current?.open ? 'ready' : 'starting');
   }, []);
 
-  const handleMessage = useCallback((payload: unknown) => {
+  const handleMessage = useCallback((payload: unknown, connection: DataConnection) => {
+    if (connection.serialization === 'raw') {
+      if (typeof payload === 'string') {
+        let message: Record<string, unknown>;
+        try {
+          message = JSON.parse(payload) as Record<string, unknown>;
+        } catch {
+          return;
+        }
+
+        if (message.type === 'hello') {
+          setRemoteDeviceName(
+            typeof message.deviceName === 'string' && message.deviceName
+              ? message.deviceName
+              : 'Eclipxse Beam Desktop',
+          );
+          return;
+        }
+        if (message.type === 'ping') {
+          connection.send(JSON.stringify({ type: 'pong' }));
+          return;
+        }
+        if (message.type === 'pong') return;
+
+        if (message.type === 'file-meta') {
+          const transferId = typeof message.transferId === 'string' ? message.transferId : '';
+          const name = typeof message.name === 'string' ? message.name : 'received-file';
+          const size = typeof message.size === 'number' ? message.size : 0;
+          const mimeType = typeof message.mimeType === 'string' ? message.mimeType : '';
+          if (!transferId || size < 0) return;
+          activeRawTransferRef.current = transferId;
+          pendingFilesRef.current.set(transferId, {
+            name,
+            size,
+            mimeType,
+            chunks: [],
+            receivedBytes: 0,
+          });
+          updateCallbackRef.current({
+            id: transferId,
+            name,
+            size,
+            mimeType,
+            direction: 'receiving',
+            status: 'transferring',
+            progress: 0,
+          });
+          return;
+        }
+
+        if (message.type === 'file-complete') {
+          const transferId = typeof message.transferId === 'string' ? message.transferId : '';
+          const pending = pendingFilesRef.current.get(transferId);
+          if (!pending || pending.receivedBytes !== pending.size) return;
+          const blob = new Blob(pending.chunks, {
+            type: pending.mimeType || 'application/octet-stream',
+          });
+          const downloadUrl = URL.createObjectURL(blob);
+          updateCallbackRef.current({
+            id: transferId,
+            name: pending.name,
+            size: pending.size,
+            mimeType: pending.mimeType,
+            direction: 'receiving',
+            status: 'complete',
+            progress: 100,
+            downloadUrl,
+          });
+          pendingFilesRef.current.delete(transferId);
+          if (activeRawTransferRef.current === transferId) activeRawTransferRef.current = null;
+        }
+        return;
+      }
+
+      const chunk = asArrayBuffer(payload);
+      const transferId = activeRawTransferRef.current;
+      if (!chunk || !transferId) return;
+      const pending = pendingFilesRef.current.get(transferId);
+      if (!pending || pending.receivedBytes + chunk.byteLength > pending.size) return;
+      pending.chunks.push(chunk);
+      pending.receivedBytes += chunk.byteLength;
+      updateCallbackRef.current({
+        id: transferId,
+        name: pending.name,
+        size: pending.size,
+        mimeType: pending.mimeType,
+        direction: 'receiving',
+        status: 'transferring',
+        progress: pending.size === 0 ? 100 : Math.min(100, (pending.receivedBytes / pending.size) * 100),
+      });
+      return;
+    }
+
     if (!payload || typeof payload !== 'object' || !('type' in payload)) return;
 
     const message = payload as BeamMessage;
@@ -146,10 +242,11 @@ export function useBeamPeer({ deviceName, onTransferUpdate }: UseBeamPeerOptions
 
       connection.on('open', () => {
         setStatus('connected');
-        connection.send({ type: 'hello', deviceName: deviceNameRef.current } satisfies BeamMessage);
+        const hello = { type: 'hello', deviceName: deviceNameRef.current } satisfies BeamMessage;
+        connection.send(connection.serialization === 'raw' ? JSON.stringify(hello) : hello);
       });
 
-      connection.on('data', handleMessage);
+      connection.on('data', (payload) => handleMessage(payload, connection));
       connection.on('close', closeConnection);
       connection.on('error', (connectionError) => {
         setError(connectionError.message || 'The connection was interrupted.');
@@ -189,7 +286,7 @@ export function useBeamPeer({ deviceName, onTransferUpdate }: UseBeamPeerOptions
   }, [configureConnection]);
 
   const connectToPeer = useCallback(
-    (remotePeerId: string) => {
+    (remotePeerId: string, serialization: ConnectionSerialization = 'default') => {
       const peer = peerRef.current;
       const cleanId = remotePeerId.trim();
 
@@ -204,6 +301,7 @@ export function useBeamPeer({ deviceName, onTransferUpdate }: UseBeamPeerOptions
 
       const connection = peer.connect(cleanId, {
         reliable: true,
+        serialization,
         metadata: { deviceName: deviceNameRef.current },
       });
       configureConnection(connection);
@@ -242,23 +340,29 @@ export function useBeamPeer({ deviceName, onTransferUpdate }: UseBeamPeerOptions
             status: 'transferring',
             progress: 0,
           });
-          connection.send({
+          const metadata = {
             type: 'file-meta',
             transferId,
             name: file.name,
             size: file.size,
             mimeType: file.type,
-          } satisfies BeamMessage);
+          } satisfies BeamMessage;
+          connection.send(connection.serialization === 'raw' ? JSON.stringify(metadata) : metadata);
 
           if (file.size === 0) {
-            connection.send({ type: 'file-complete', transferId } satisfies BeamMessage);
+            const complete = { type: 'file-complete', transferId } satisfies BeamMessage;
+            connection.send(connection.serialization === 'raw' ? JSON.stringify(complete) : complete);
           } else {
             for (const range of getChunkRanges(file.size)) {
               if (!connection.open) throw new Error('The other device disconnected.');
 
               await waitForBuffer(connection);
               const chunk = await file.slice(range.start, range.end).arrayBuffer();
-              connection.send({ type: 'file-chunk', transferId, data: chunk } satisfies BeamMessage);
+              connection.send(
+                connection.serialization === 'raw'
+                  ? chunk
+                  : ({ type: 'file-chunk', transferId, data: chunk } satisfies BeamMessage),
+              );
               updateCallbackRef.current({
                 ...baseUpdate,
                 status: 'transferring',
@@ -266,7 +370,8 @@ export function useBeamPeer({ deviceName, onTransferUpdate }: UseBeamPeerOptions
               });
             }
             await waitForBuffer(connection);
-            connection.send({ type: 'file-complete', transferId } satisfies BeamMessage);
+            const complete = { type: 'file-complete', transferId } satisfies BeamMessage;
+            connection.send(connection.serialization === 'raw' ? JSON.stringify(complete) : complete);
           }
 
           updateCallbackRef.current({

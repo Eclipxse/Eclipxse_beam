@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod backend;
+mod webrtc_transport;
 
 use std::{env, path::PathBuf, thread, time::Duration};
 
@@ -118,9 +119,9 @@ fn apply_snapshot(app: &AppWindow, snapshot: BackendSnapshot) {
     app.set_device_connected(connected);
     app.set_device_name(device_name.clone().into());
     app.set_device_detail(if connected {
-        "Same Wi-Fi · Connected".into()
+        "WebRTC / Encrypted".into()
     } else {
-        "Open Receive · Scan QR".into()
+        "Open Receive / Scan QR".into()
     });
 
     let transfer_entries = snapshot
@@ -287,7 +288,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    app.on_start_transfer(|| {});
+    let transfer_backend = beam_backend.clone();
+    app.on_start_transfer(move || transfer_backend.start_transfer());
 
     let weak = app.as_weak();
     app.on_close_requested(move || {
@@ -342,7 +344,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(path) = capture {
         let weak = app.as_weak();
-        Timer::single_shot(Duration::from_millis(900), move || {
+        Timer::single_shot(Duration::from_millis(3500), move || {
             let Some(app) = weak.upgrade() else { return };
             let Ok(buffer) = app.window().take_snapshot() else {
                 return;

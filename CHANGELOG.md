@@ -2,6 +2,25 @@
 
 All notable Eclipxse Beam releases are documented here.
 
+## Native v0.1.1 / Web v0.3.1 — 2026-07-16
+
+This patch restores the proven WebRTC pairing flow behind the premium Slint interface.
+
+### Fixed
+
+- Replaced the native QR's router-dependent `http://192.168.x.x` target with the official HTTPS Beam companion
+- Added native Rust PeerJS signaling and encrypted WebRTC data channels
+- Added the same STUN and TURN connectivity fallback used by PeerJS so restrictive Wi-Fi networks do not block pairing
+- Added a raw, framed transfer protocol shared by the Slint desktop and browser companion
+- Restored phone-to-PC uploads and PC-to-phone downloads without requiring a shared Wi-Fi network or inbound firewall rule
+- Updated the Slint connection language to describe WebRTC rather than same-Wi-Fi HTTP
+
+### Validation
+
+- Browser tests and production build
+- Native unit, integration, formatting, and clippy checks
+- Live automated PeerJS/WebRTC handshake and phone-to-PC byte-for-byte transfer verification
+
 ## Native v0.1.0 — 2026-07-16
 
 The first functional native Windows release.

@@ -21,6 +21,7 @@ function fileKey(file: File) {
 }
 
 export default function App() {
+  const nativeCompanion = new URLSearchParams(window.location.search).get('native') === '1';
   const [deviceName, setDeviceName] = useState(() => {
     return localStorage.getItem('beam-device-name') || getFriendlyDeviceName();
   });
@@ -39,6 +40,7 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const downloadUrlsRef = useRef<string[]>([]);
+  const autoConnectAttemptedRef = useRef(false);
 
   const handleTransferUpdate = useCallback((update: TransferUpdate) => {
     if (update.downloadUrl) downloadUrlsRef.current.push(update.downloadUrl);
@@ -66,6 +68,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('beam-device-name', deviceName);
   }, [deviceName]);
+
+  useEffect(() => {
+    if (
+      nativeCompanion
+      && pairingCode
+      && status === 'ready'
+      && !autoConnectAttemptedRef.current
+    ) {
+      autoConnectAttemptedRef.current = true;
+      connectToPeer(normalizePairingCode(pairingCode), 'raw');
+    }
+  }, [connectToPeer, nativeCompanion, pairingCode, status]);
 
   useEffect(() => {
     return () => {
@@ -120,7 +134,7 @@ export default function App() {
     const code = normalizePairingCode(pairingCode);
     setPairingCode(code);
     setLocalError('');
-    connectToPeer(code);
+    connectToPeer(code, nativeCompanion ? 'raw' : 'default');
   };
 
   const handleSend = async () => {
@@ -463,7 +477,7 @@ export default function App() {
       <footer>
         <BeamLogo compact />
         <p>Private transfer, designed by Eclipxse.</p>
-        <span>Desktop v0.3.0</span>
+        <span>Desktop v0.3.1</span>
       </footer>
     </div>
   );

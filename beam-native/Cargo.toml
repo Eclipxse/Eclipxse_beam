@@ -1,6 +1,6 @@
 [package]
 name = "eclipxse-beam-native"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Native Slint desktop prototype for Eclipxse Beam"
 license = "MIT"
@@ -19,9 +19,12 @@ qrcode = { version = "0.14", default-features = false }
 rand = "0.9"
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 slint = { version = "~1.17.1", features = ["unstable-winit-030"] }
-tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "time"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
+tokio-tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
 urlencoding = "2"
+webrtc = "0.17.1"
 
 [build-dependencies]
 slint-build = "~1.17.1"
