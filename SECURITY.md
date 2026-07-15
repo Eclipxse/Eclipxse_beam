@@ -21,10 +21,12 @@ Use GitHub's private vulnerability reporting for this repository. Include reprod
 
 ### Native Windows edition
 
-- Native v0.1.0 serves a phone companion over local HTTP and is intended only for trusted private networks.
-- Access requires the full random session URL embedded in the QR code; the token changes whenever Beam restarts.
-- The phone can request only files explicitly selected during the current process.
+- Native v0.1.1 uses WebRTC's encrypted transport with the official HTTPS phone companion.
+- PeerJS can observe temporary signaling metadata but does not receive Beam file payloads.
+- TURN may relay encrypted WebRTC packets when a direct connection cannot be established.
+- Access requires the full random pairing identity embedded in the QR link; the identity changes whenever Beam restarts.
+- The desktop sends only files explicitly selected during the current process.
 - Incoming filenames are stripped of paths, unsafe Windows characters, and reserved device names before saving.
 - Completed uploads are written under `Downloads\Eclipxse Beam` with collision-safe names.
-- Local HTTP is not encrypted against another device capable of observing traffic on the same network.
-- Close the native application after transferring to terminate its session and local server.
+- The token-protected local HTTP companion remains available only as a development fallback and is not used by the release QR flow.
+- Close the native application after transferring to terminate its pairing identity and active data channel.

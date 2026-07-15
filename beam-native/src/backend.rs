@@ -1,7 +1,8 @@
 use std::{
     collections::HashSet,
+    env,
     error::Error,
-    net::{IpAddr, Ipv4Addr, TcpListener, UdpSocket},
+    net::{Ipv4Addr, TcpListener},
     path::{Path as FilePath, PathBuf},
     sync::{
         Arc, RwLock,
@@ -10,6 +11,9 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+
+#[cfg(test)]
+use std::net::{IpAddr, UdpSocket};
 
 use async_stream::stream;
 use axum::{
@@ -26,8 +30,10 @@ use rand::{Rng, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+use crate::webrtc_transport::{self, WebRtcCommand};
+
 const COMPANION_HTML: &str = include_str!("companion.html");
-const MAX_UPLOAD_BYTES: u64 = 8 * 1024 * 1024 * 1024;
+pub(crate) const MAX_UPLOAD_BYTES: u64 = 8 * 1024 * 1024 * 1024;
 const STREAM_CHUNK_BYTES: usize = 64 * 1024;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -86,7 +92,7 @@ struct SessionState {
     last_error: Option<String>,
 }
 
-struct BackendInner {
+pub(crate) struct BackendInner {
     token: String,
     download_root: PathBuf,
     state: RwLock<SessionState>,
@@ -97,30 +103,56 @@ struct BackendInner {
 pub struct BeamBackend {
     inner: Arc<BackendInner>,
     base_url: String,
+    #[cfg(test)]
+    lan_url: String,
     pairing_code: String,
     lan_reachable: bool,
+    webrtc_commands: tokio::sync::mpsc::UnboundedSender<WebRtcCommand>,
 }
 
 impl BeamBackend {
     pub fn start() -> Result<(Self, Receiver<BackendEvent>), Box<dyn Error>> {
-        let download_root = dirs::download_dir()
-            .unwrap_or(std::env::current_dir()?)
-            .join("Eclipxse Beam");
+        let download_root = if cfg!(debug_assertions) {
+            env::var_os("ECLIPXSE_DOWNLOAD_ROOT").map(PathBuf::from)
+        } else {
+            None
+        }
+        .unwrap_or(
+            dirs::download_dir()
+                .unwrap_or(std::env::current_dir()?)
+                .join("Eclipxse Beam"),
+        );
         Self::start_with_download_root(download_root)
     }
 
     fn start_with_download_root(
         download_root: PathBuf,
     ) -> Result<(Self, Receiver<BackendEvent>), Box<dyn Error>> {
-        let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0))?;
-        listener.set_nonblocking(true)?;
-        let port = listener.local_addr()?.port();
+        let listener = if cfg!(debug_assertions) {
+            let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0))?;
+            listener.set_nonblocking(true)?;
+            Some(listener)
+        } else {
+            None
+        };
+        #[cfg(test)]
+        let port = listener
+            .as_ref()
+            .expect("tests enable the local fallback")
+            .local_addr()?
+            .port();
+        #[cfg(test)]
         let local_ip = discover_local_ip().unwrap_or(Ipv4Addr::LOCALHOST);
-        let lan_reachable = !local_ip.is_loopback();
+        let lan_reachable = true;
         let token = random_token(28);
-        let pairing_code = format!("{}-{}", &token[0..3], &token[3..6]).to_uppercase();
-        let base_url = format!("http://{local_ip}:{port}/pair/{token}");
+        let peer_id = debug_peer_id().unwrap_or_else(|| random_token(24));
+        let pairing_code = format!("{}-{}", &peer_id[0..3], &peer_id[3..6]).to_uppercase();
+        let base_url =
+            format!("https://eclipxse.github.io/Eclipxse_beam/?peer={peer_id}&native=1&auto=1");
+        #[cfg(test)]
+        let lan_url = format!("http://{local_ip}:{port}/pair/{token}");
         let (events, receiver) = mpsc::channel();
+        let (webrtc_commands, webrtc_command_receiver) = tokio::sync::mpsc::unbounded_channel();
         let inner = Arc::new(BackendInner {
             token,
             download_root,
@@ -146,15 +178,7 @@ impl BeamBackend {
                 };
 
                 runtime.block_on(async move {
-                    let listener = match tokio::net::TcpListener::from_std(listener) {
-                        Ok(listener) => listener,
-                        Err(error) => {
-                            server_state
-                                .set_error(format!("Could not open the companion port: {error}"));
-                            return;
-                        }
-                    };
-                    let app = companion_router(server_state.clone());
+                    webrtc_transport::start(peer_id, server_state.clone(), webrtc_command_receiver);
                     let presence_state = server_state.clone();
                     tokio::spawn(async move {
                         loop {
@@ -162,8 +186,24 @@ impl BeamBackend {
                             presence_state.expire_device_if_stale();
                         }
                     });
-                    if let Err(error) = axum::serve(listener, app).await {
-                        server_state.set_error(format!("The companion server stopped: {error}"));
+
+                    if let Some(listener) = listener {
+                        let listener = match tokio::net::TcpListener::from_std(listener) {
+                            Ok(listener) => listener,
+                            Err(error) => {
+                                server_state.set_error(format!(
+                                    "Could not open the companion fallback port: {error}"
+                                ));
+                                return;
+                            }
+                        };
+                        let app = companion_router(server_state.clone());
+                        if let Err(error) = axum::serve(listener, app).await {
+                            server_state
+                                .set_error(format!("The companion fallback stopped: {error}"));
+                        }
+                    } else {
+                        std::future::pending::<()>().await;
                     }
                 });
             })?;
@@ -172,8 +212,11 @@ impl BeamBackend {
             Self {
                 inner,
                 base_url,
+                #[cfg(test)]
+                lan_url,
                 pairing_code,
                 lan_reachable,
+                webrtc_commands,
             },
             receiver,
         ))
@@ -185,6 +228,11 @@ impl BeamBackend {
 
     pub fn pairing_code(&self) -> &str {
         &self.pairing_code
+    }
+
+    #[cfg(test)]
+    pub fn lan_pairing_url(&self) -> &str {
+        &self.lan_url
     }
 
     pub fn lan_reachable(&self) -> bool {
@@ -270,14 +318,25 @@ impl BeamBackend {
         drop(state);
         self.inner.notify();
     }
+
+    pub fn start_transfer(&self) {
+        if self
+            .webrtc_commands
+            .send(WebRtcCommand::SendQueued)
+            .is_err()
+        {
+            self.inner
+                .set_error("The secure transfer service is not running.".into());
+        }
+    }
 }
 
 impl BackendInner {
-    fn notify(&self) {
+    pub(crate) fn notify(&self) {
         let _ = self.events.send(BackendEvent::StateChanged);
     }
 
-    fn set_error(&self, message: String) {
+    pub(crate) fn set_error(&self, message: String) {
         self.state
             .write()
             .expect("backend state poisoned")
@@ -285,7 +344,7 @@ impl BackendInner {
         self.notify();
     }
 
-    fn mark_device_connected(&self, name: String) {
+    pub(crate) fn mark_device_connected(&self, name: String) {
         let mut state = self.state.write().expect("backend state poisoned");
         let changed = state.device_name.as_deref() != Some(name.as_str());
         state.device_name = Some(name);
@@ -295,6 +354,35 @@ impl BackendInner {
         if changed {
             self.notify();
         }
+    }
+
+    pub(crate) fn refresh_device(&self) {
+        let mut state = self.state.write().expect("backend state poisoned");
+        if state.device_name.is_some() {
+            state.device_last_seen = Some(Instant::now());
+        }
+    }
+
+    pub(crate) fn mark_device_disconnected(&self) {
+        let mut state = self.state.write().expect("backend state poisoned");
+        let changed = state.device_name.take().is_some();
+        state.device_last_seen = None;
+        drop(state);
+        if changed {
+            self.notify();
+        }
+    }
+
+    pub(crate) fn selected_files(&self) -> Vec<SharedFileInfo> {
+        self.state
+            .read()
+            .expect("backend state poisoned")
+            .files
+            .clone()
+    }
+
+    pub(crate) fn download_root(&self) -> PathBuf {
+        self.download_root.clone()
     }
 
     fn expire_device_if_stale(&self) {
@@ -311,7 +399,7 @@ impl BackendInner {
         self.notify();
     }
 
-    fn begin_transfer(&self, transfer: TransferInfo) {
+    pub(crate) fn begin_transfer(&self, transfer: TransferInfo) {
         let mut state = self.state.write().expect("backend state poisoned");
         if let Some(existing) = state
             .transfers
@@ -326,7 +414,7 @@ impl BackendInner {
         self.notify();
     }
 
-    fn update_transfer(&self, id: &str, sent: u64, status: TransferStatus) {
+    pub(crate) fn update_transfer(&self, id: &str, sent: u64, status: TransferStatus) {
         let mut state = self.state.write().expect("backend state poisoned");
         let Some(transfer) = state
             .transfers
@@ -353,7 +441,7 @@ impl BackendInner {
         }
     }
 
-    fn complete_upload(&self, id: &str, destination: PathBuf) {
+    pub(crate) fn complete_upload(&self, id: &str, destination: PathBuf) {
         let mut state = self.state.write().expect("backend state poisoned");
         if let Some(transfer) = state
             .transfers
@@ -369,7 +457,7 @@ impl BackendInner {
         self.notify();
     }
 
-    fn fail_transfer(&self, id: &str, error: String) {
+    pub(crate) fn fail_transfer(&self, id: &str, error: String) {
         let mut state = self.state.write().expect("backend state poisoned");
         if let Some(transfer) = state
             .transfers
@@ -651,6 +739,7 @@ fn device_name_from_headers(headers: &HeaderMap) -> String {
     }
 }
 
+#[cfg(test)]
 fn discover_local_ip() -> Option<Ipv4Addr> {
     let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).ok()?;
     socket.connect(("1.1.1.1", 80)).ok()?;
@@ -668,7 +757,20 @@ fn random_token(length: usize) -> String {
         .collect()
 }
 
-fn sanitize_filename(value: &str) -> String {
+fn debug_peer_id() -> Option<String> {
+    if !cfg!(debug_assertions) {
+        return None;
+    }
+    env::var("ECLIPXSE_PEER_ID").ok().filter(|value| {
+        !value.is_empty()
+            && value.len() <= 64
+            && value
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric())
+    })
+}
+
+pub(crate) fn sanitize_filename(value: &str) -> String {
     let basename = FilePath::new(value)
         .file_name()
         .and_then(|name| name.to_str())
@@ -711,7 +813,7 @@ fn sanitize_filename(value: &str) -> String {
     }
 }
 
-async fn unique_destination(root: &FilePath, name: &str) -> PathBuf {
+pub(crate) async fn unique_destination(root: &FilePath, name: &str) -> PathBuf {
     let original = root.join(name);
     if !tokio::fs::try_exists(&original).await.unwrap_or(true) {
         return original;
@@ -791,7 +893,7 @@ mod tests {
     #[test]
     fn companion_serves_pairing_page_and_selected_file() {
         let (backend, _events) = BeamBackend::start().expect("backend starts");
-        let page = raw_get(backend.pairing_url());
+        let page = raw_get(backend.lan_pairing_url());
         assert!(page.starts_with(b"HTTP/1.1 200"));
         assert!(
             page.windows(b"Beam Companion".len())
@@ -804,7 +906,7 @@ mod tests {
         let snapshot = backend.snapshot();
         let file = snapshot.files.first().expect("file is selected");
         let (origin, token) = backend
-            .pairing_url()
+            .lan_pairing_url()
             .rsplit_once("/pair/")
             .expect("pairing URL contains token");
         let download_url = format!("{origin}/api/file/{token}/{}", file.id);
@@ -828,7 +930,7 @@ mod tests {
         let (backend, _events) =
             BeamBackend::start_with_download_root(download_root.clone()).expect("backend starts");
         let (origin, token) = backend
-            .pairing_url()
+            .lan_pairing_url()
             .rsplit_once("/pair/")
             .expect("pairing URL contains token");
         let upload_url = format!("{origin}/api/upload/{token}?name=phone-note.txt");

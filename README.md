@@ -18,17 +18,17 @@
 
 ## Meet Eclipxse Beam
 
-Beam is an open-source file-transfer project with two deliberately different editions:
+Beam is an open-source file-transfer project with a native Windows interface and a browser companion that share one encrypted transport:
 
 | Edition | Best for | Transport | Install required |
 | --- | --- | --- | --- |
-| **Native Windows** | Fast transfers between a Windows PC and a phone on the same Wi-Fi | Token-protected local HTTP | One portable EXE |
-| **Web app** | Transfers between modern browsers, including different networks | Encrypted WebRTC data channel with PeerJS signaling | No |
+| **Native Windows** | Premium Windows-to-phone transfers | Encrypted WebRTC with PeerJS signaling | One portable EXE |
+| **Web app** | Browser transfers and the native phone companion | Encrypted WebRTC with PeerJS signaling | No |
 
 Neither edition requires an account or uploads your files to Beam-owned cloud storage.
 
 > [!IMPORTANT]
-> The native and web transports have different security properties. The web app uses encrypted WebRTC. Native v0.1.0 uses local HTTP with a long random session token and is intended for trusted private networks. See [Security and privacy](#security-and-privacy) before using it on a public network.
+> Native v0.1.1 restores the proven WebRTC transport behind the Slint interface. The QR opens the official HTTPS companion instead of a private LAN address, so router client isolation no longer prevents pairing.
 
 ## Native Windows preview
 
@@ -42,7 +42,7 @@ The Send workspace opens the native Windows file picker, displays the real queue
 
 ![Native Receive screen showing the generated local QR session](beam-native/docs/receive.png)
 
-Every launch creates a new random session and QR code. Scan it with the phone camera while both devices are on the same Wi-Fi network.
+Every launch creates a fresh PeerJS identity and HTTPS QR link. Scan it with the phone camera; the companion connects automatically over encrypted WebRTC.
 
 ### Follow every transfer
 
@@ -61,8 +61,8 @@ The matching SHA-256 checksum is published beside the EXE on the [Releases page]
 ### Windows requirements
 
 - Windows 10 or Windows 11, 64-bit
-- A Wi-Fi or trusted local network shared with the phone
-- Permission through Windows Firewall on **private networks**
+- Internet access on both devices for HTTPS signaling
+- No shared Wi-Fi, inbound firewall rule, or router configuration required
 - No Node.js, Rust, account, or installer required for the downloaded EXE
 
 The current community build is not code-signed. Windows SmartScreen may display an **Unknown publisher** warning. Verify the checksum from the release before running it.
@@ -76,8 +76,8 @@ The current community build is not code-signed. Windows SmartScreen may display 
 3. Pick one or more files in the native Windows dialog.
 4. Open **Receive** or select **Pair phone**.
 5. Scan the generated QR code with the phone camera.
-6. Download the shared files from the Beam companion page.
-7. Keep the desktop app and phone page open until Beam shows **Done**.
+6. Wait for the encrypted connection, then select **Beam selected files**.
+7. Download the completed file from the phone activity list.
 
 ### Send files from a phone to the PC
 
@@ -98,10 +98,11 @@ Existing names are preserved safely. If a file already exists, Beam creates a co
 - Native frameless Windows shell built with Slint and Rust
 - Warm Raycast-inspired cream, sage, caramel, and espresso design system
 - Real Windows file picker and model-backed multi-file queue
-- Fresh, unguessable session token and QR code on every launch
-- Responsive mobile companion served by the desktop application
-- PC-to-phone streaming downloads
-- Phone-to-PC streaming uploads
+- Fresh, unguessable PeerJS identity and HTTPS QR link on every launch
+- Official mobile companion hosted on GitHub Pages
+- Encrypted PC-to-phone WebRTC transfers
+- Encrypted phone-to-PC WebRTC transfers written directly to disk
+- STUN discovery with TURN fallback for restrictive routers
 - Live device presence with automatic disconnect expiry
 - Direction, byte progress, completion, and error states
 - Automatic transfer-workspace navigation when an upload begins
@@ -125,25 +126,19 @@ The default signaling service can observe connection metadata, but Beam does not
 
 ## Architecture
 
-### Native v0.1.0
+### Native v0.1.1
 
-```text
-Windows PC                                           Phone browser
-┌─────────────────────────────┐                     ┌─────────────────────────┐
-│ Slint interface             │                     │ Beam companion          │
-│  • real file queue          │                     │  • download PC files    │
-│  • device/progress models   │                     │  • upload phone files   │
-└──────────────┬──────────────┘                     └────────────┬────────────┘
-               │ Rust events                                      │
-┌──────────────▼──────────────┐   tokenized same-Wi-Fi HTTP   ┌────▼────────────┐
-│ Axum companion server      ◄├──────────────────────────────►│ Camera/browser  │
-│ random port + session token │                                └─────────────────┘
-└──────────────┬──────────────┘
-               │
-       selected source files / Downloads\Eclipxse Beam
+```mermaid
+flowchart LR
+    A["Slint desktop UI"] --> B["Rust WebRTC transport"]
+    C["Phone HTTPS companion"] --> D["Browser WebRTC transport"]
+    B -. "temporary signaling metadata" .-> E["PeerJS signaling"]
+    D -. "temporary signaling metadata" .-> E
+    B <== "encrypted file data channel" ==> D
+    B --> F["Selected PC files / Downloads\\Eclipxse Beam"]
 ```
 
-The server binds to a random local port. File identifiers map to selected paths held inside the process, so the phone cannot request arbitrary filesystem paths. Upload names are sanitized before a collision-safe destination is created.
+PeerJS coordinates the offer, answer, and network candidates. File payloads use the encrypted WebRTC data channel. Incoming names are sanitized before a collision-safe destination is created, and phone uploads are streamed to disk rather than retained in memory.
 
 ### Web edition
 
@@ -158,12 +153,12 @@ Sender browser ── signaling metadata ── PeerJS signaling service
 
 ### Native edition
 
-- Access requires the full random session URL embedded in the QR code.
-- The token changes whenever the app restarts.
-- The phone can download only files explicitly selected in the current process.
+- Access requires the full random pairing identity embedded in the HTTPS QR link.
+- The identity changes whenever the app restarts.
+- File payloads travel over WebRTC's encrypted transport.
+- PeerJS signaling infrastructure may observe connection metadata but does not receive file payloads.
+- TURN may relay encrypted WebRTC packets when a direct path is unavailable.
 - Incoming names are stripped of paths, unsafe Windows characters, and reserved device names.
-- Native v0.1.0 uses **HTTP, not HTTPS**, on the local network.
-- Use it only on a trusted home, work, or private hotspot network.
 - Close Beam after the transfer to terminate the session immediately.
 - Treat every received file as untrusted input and scan it when appropriate.
 
@@ -180,11 +175,10 @@ Report vulnerabilities through GitHub's [private vulnerability reporting](https:
 
 ### The phone cannot open the QR page
 
-- Confirm the phone and PC are connected to the same Wi-Fi or hotspot.
-- Allow Eclipxse Beam through Windows Firewall on private networks.
-- Disable a VPN temporarily if it is routing Beam through the wrong adapter.
-- Avoid guest Wi-Fi networks that isolate devices from one another.
-- Restart Beam to generate a fresh session and try the new QR code.
+- Confirm both devices have internet access.
+- Restart Beam to generate a fresh HTTPS pairing link.
+- Update to native v0.1.1 or later; v0.1.0 used a same-Wi-Fi HTTP address that restrictive routers could block.
+- Temporarily disable browser content blockers if the PeerJS connection is prevented from opening.
 
 ### Windows shows “Unknown publisher”
 
@@ -237,9 +231,10 @@ cargo fmt --manifest-path beam-native/Cargo.toml --all -- --check
 cargo test --manifest-path beam-native/Cargo.toml
 cargo clippy --manifest-path beam-native/Cargo.toml --all-targets -- -D warnings
 npm run check
+node scripts/verify-webrtc.mjs
 ```
 
-The native integration suite starts the companion server, retrieves the mobile page, streams a real selected file, uploads a phone payload, verifies the saved bytes, and checks the resulting transfer state.
+The native tests cover the local fallback and transfer state. `scripts/verify-webrtc.mjs` additionally launches the Slint app and browser companion, establishes a live PeerJS/WebRTC session, sends a generated phone fixture, and verifies the saved bytes.
 
 ## Repository structure
 
@@ -248,25 +243,25 @@ beam-native/
   src/backend.rs       Native pairing and streaming backend
   src/companion.html   Responsive phone companion
   src/main.rs          Slint/backend bridge and Windows shell
+  src/webrtc_transport.rs  PeerJS signaling and encrypted data channels
   ui/                  Slint screens, components, tokens, and assets
 desktop/               Electron wrapper for the web edition
 src/                   React/PeerJS web application
+scripts/               Live WebRTC integration verification
 .github/workflows/     CI, Pages, Electron, and native release automation
 ```
 
 ## Current limitations
 
-- Native v0.1.0 requires both devices to be on the same reachable local network.
-- Native local HTTP is not encrypted against other devices on that network.
-- Guest Wi-Fi client isolation can block phone-to-PC access.
 - The native build is currently Windows x64 only.
 - The native app does not yet support folders, resumable transfers, or code signing.
 - The web receiver currently assembles received files in memory.
+- WebRTC pairing requires temporary access to the public PeerJS signaling and ICE services.
 
 ## Roadmap
 
-- [ ] Internet-capable native WebRTC transport
-- [ ] TLS or authenticated encrypted native local transport
+- [x] Internet-capable native WebRTC transport
+- [x] HTTPS phone companion and encrypted WebRTC payload transport
 - [ ] Signed Windows installer and automatic updates
 - [ ] Folder transfers
 - [ ] Pause, resume, retry, and receiver acknowledgements
