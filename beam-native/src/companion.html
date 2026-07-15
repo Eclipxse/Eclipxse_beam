@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1a0e09">
+  <title>Eclipxse Beam Companion</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --cream: #f7f1de;
+      --sage: #b0ba99;
+      --caramel: #9d6638;
+      --espresso: #4e220f;
+      --canvas: #1a0e09;
+      --surface: #24150f;
+      --muted: #c2b9a6;
+      --faint: #817568;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100svh;
+      background:
+        radial-gradient(circle at 18% -5%, rgba(157, 102, 56, .25), transparent 34rem),
+        var(--canvas);
+      color: var(--cream);
+    }
+    main { width: min(100%, 42rem); margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    header { display: flex; align-items: center; gap: .75rem; padding: .5rem 0 2rem; }
+    .mark { position: relative; width: 2rem; height: 2rem; border: 2px solid var(--cream); border-radius: 50%; }
+    .mark::after { content: ""; position: absolute; left: -.35rem; right: -.35rem; top: calc(50% - 1px); height: 2px; background: var(--caramel); }
+    header strong { font-size: .95rem; letter-spacing: -.01em; }
+    .status { margin-left: auto; display: flex; align-items: center; gap: .45rem; color: var(--muted); font-size: .78rem; }
+    .status::before { content: ""; width: .48rem; height: .48rem; border-radius: 50%; background: var(--sage); box-shadow: 0 0 0 .25rem rgba(176, 186, 153, .08); }
+    .hero { padding: 1.5rem; border-radius: 1.25rem; background: rgba(247, 241, 222, .045); }
+    .eyebrow { margin: 0 0 .75rem; color: var(--sage); font-size: .72rem; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 0; max-width: 14ch; font-size: clamp(2rem, 10vw, 3.4rem); line-height: .98; letter-spacing: -.055em; }
+    .hero p:last-child { margin: 1rem 0 0; color: var(--muted); line-height: 1.55; }
+    section { margin-top: 1.8rem; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; margin-bottom: .75rem; }
+    h2 { margin: 0; font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .section-head span { color: var(--faint); font-size: .75rem; }
+    .empty { padding: 1.35rem; border-radius: 1rem; background: rgba(247, 241, 222, .035); color: var(--muted); line-height: 1.5; }
+    .files { display: grid; gap: .55rem; }
+    .file {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem;
+      border-radius: 1rem;
+      background: rgba(247, 241, 222, .045);
+    }
+    .file strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .94rem; }
+    .file small { display: block; margin-top: .3rem; color: var(--faint); }
+    .file a, .pick {
+      appearance: none;
+      border: 0;
+      border-radius: .75rem;
+      background: var(--caramel);
+      color: var(--cream);
+      font: inherit;
+      font-size: .82rem;
+      font-weight: 700;
+      padding: .75rem 1rem;
+      text-decoration: none;
+    }
+    .upload { padding: 1.15rem; border-radius: 1rem; background: rgba(247, 241, 222, .045); }
+    .upload p { margin: 0 0 1rem; color: var(--muted); line-height: 1.5; }
+    input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .pick { display: flex; justify-content: center; width: 100%; cursor: pointer; padding: .95rem 1rem; }
+    .queue { display: grid; gap: .6rem; margin-top: 1rem; }
+    .job { padding: .9rem; border-radius: .8rem; background: rgba(0, 0, 0, .18); }
+    .job div:first-child { display: flex; justify-content: space-between; gap: 1rem; font-size: .78rem; }
+    .job span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .job span:last-child { color: var(--muted); }
+    .track { height: .3rem; margin-top: .7rem; overflow: hidden; border-radius: 1rem; background: rgba(247, 241, 222, .08); }
+    .track i { display: block; width: 0; height: 100%; background: var(--sage); transition: width .18s ease; }
+    footer { margin-top: 2rem; color: var(--faint); font-size: .72rem; text-align: center; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="mark" aria-hidden="true"></span>
+      <strong>Eclipxse Beam</strong>
+      <span class="status" id="status">Connected locally</span>
+    </header>
+
+    <div class="hero">
+      <p class="eyebrow">Phone companion</p>
+      <h1>Beam it. Keep it private.</h1>
+      <p>Your phone is talking directly to this computer over the current Wi-Fi network.</p>
+    </div>
+
+    <section>
+      <div class="section-head"><h2>From computer</h2><span id="file-count">Checking…</span></div>
+      <div class="files" id="files"><div class="empty">Looking for files shared by the computer…</div></div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>To computer</h2><span>Saved to Downloads</span></div>
+      <div class="upload">
+        <p>Choose photos, videos, documents, or any other files from this phone.</p>
+        <label class="pick" for="picker">Choose files to beam</label>
+        <input id="picker" type="file" multiple>
+        <div class="queue" id="queue"></div>
+      </div>
+    </section>
+
+    <footer>Keep this page and Eclipxse Beam open until every transfer finishes.<br>Only devices with this private pairing link can access the session.</footer>
+  </main>
+
+  <script>
+    const token = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+    const filesNode = document.querySelector('#files');
+    const countNode = document.querySelector('#file-count');
+    const statusNode = document.querySelector('#status');
+    const picker = document.querySelector('#picker');
+    const queue = document.querySelector('#queue');
+
+    const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[character]);
+
+    const formatBytes = (value) => {
+      if (!value) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const unit = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+      const amount = value / Math.pow(1024, unit);
+      return `${amount >= 10 || unit === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unit]}`;
+    };
+
+    async function refreshSession() {
+      try {
+        const response = await fetch(`/api/session/${encodeURIComponent(token)}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Pairing session expired');
+        const session = await response.json();
+        statusNode.textContent = 'Connected locally';
+        countNode.textContent = `${session.files.length} ${session.files.length === 1 ? 'file' : 'files'}`;
+        filesNode.innerHTML = session.files.length ? session.files.map((file) => `
+          <article class="file">
+            <div><strong>${escapeHtml(file.name)}</strong><small>${formatBytes(file.size)}</small></div>
+            <a href="/api/file/${encodeURIComponent(token)}/${encodeURIComponent(file.id)}">Download</a>
+          </article>
+        `).join('') : '<div class="empty">No files are shared yet. Choose files in the desktop app and they will appear here automatically.</div>';
+      } catch (error) {
+        statusNode.textContent = 'Reconnecting…';
+      }
+    }
+
+    function upload(file) {
+      return new Promise((resolve) => {
+        const job = document.createElement('div');
+        job.className = 'job';
+        job.innerHTML = `<div><span>${escapeHtml(file.name)}</span><span>0%</span></div><div class="track"><i></i></div>`;
+        queue.prepend(job);
+        const percent = job.querySelector('div span:last-child');
+        const fill = job.querySelector('i');
+        const request = new XMLHttpRequest();
+        request.open('POST', `/api/upload/${encodeURIComponent(token)}?name=${encodeURIComponent(file.name)}`);
+        request.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        request.upload.onprogress = (event) => {
+          const value = event.lengthComputable ? Math.round((event.loaded / event.total) * 100) : 0;
+          percent.textContent = `${value}%`;
+          fill.style.width = `${value}%`;
+        };
+        request.onload = () => {
+          const succeeded = request.status >= 200 && request.status < 300;
+          percent.textContent = succeeded ? 'Saved' : 'Failed';
+          fill.style.width = succeeded ? '100%' : '0%';
+          resolve();
+        };
+        request.onerror = () => { percent.textContent = 'Failed'; resolve(); };
+        request.send(file);
+      });
+    }
+
+    picker.addEventListener('change', async () => {
+      for (const file of Array.from(picker.files || [])) await upload(file);
+      picker.value = '';
+    });
+
+    refreshSession();
+    setInterval(refreshSession, 1500);
+  </script>
+</body>
+</html>

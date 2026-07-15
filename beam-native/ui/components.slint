@@ -92,12 +92,13 @@ export component IconButton inherits Rectangle {
 export component PrimaryButton inherits Rectangle {
     in property <string> label;
     in property <string> icon: "";
+    in property <bool> enabled: true;
     callback clicked;
 
     min-width: 156px;
     height: 48px;
     border-radius: Metrics.radius-small;
-    background: touch.pressed ? #82522f : (touch.has-hover ? Theme.accent-hover : Theme.accent);
+    background: !root.enabled ? Theme.surface-hover : (touch.pressed ? #82522f : (touch.has-hover ? Theme.accent-hover : Theme.accent));
     animate background { duration: 120ms; easing: ease-out; }
 
     HorizontalLayout {
@@ -109,14 +110,14 @@ export component PrimaryButton inherits Rectangle {
         Text {
             visible: root.icon != "";
             text: root.icon;
-            color: Theme.cream;
+            color: root.enabled ? Theme.cream : Theme.text-faint;
             font-family: "Segoe UI Symbol";
             font-size: 14px;
             vertical-alignment: center;
         }
         Text {
             text: root.label;
-            color: Theme.cream;
+            color: root.enabled ? Theme.cream : Theme.text-faint;
             font-family: "Segoe UI";
             font-size: 14px;
             font-weight: 650;
@@ -125,7 +126,8 @@ export component PrimaryButton inherits Rectangle {
     }
 
     touch := TouchArea {
-        mouse-cursor: pointer;
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
         clicked => { root.clicked(); }
     }
 }
@@ -209,7 +211,7 @@ export component DropCommand inherits Rectangle {
         HorizontalLayout {
             spacing: 8px;
             Text {
-                text: "Drop files or";
+                text: "Choose files from";
                 color: Theme.text;
                 font-family: "Segoe UI";
                 font-size: 19px;
@@ -217,7 +219,7 @@ export component DropCommand inherits Rectangle {
                 vertical-alignment: center;
             }
             Text {
-                text: "choose files";
+                text: "this computer";
                 color: Theme.caramel;
                 font-family: "Segoe UI";
                 font-size: 19px;
@@ -234,7 +236,7 @@ export component DropCommand inherits Rectangle {
             border-radius: Metrics.radius-small;
             background: Theme.surface-hover;
             Text {
-                text: "Ctrl O";
+                text: "Browse";
                 color: Theme.text-muted;
                 font-family: "Segoe UI";
                 font-size: 12px;
