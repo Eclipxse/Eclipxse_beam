@@ -17,6 +17,14 @@ Thanks for helping make private file sharing friendlier.
 4. Add or update tests for behavioral changes.
 5. Run `npm run check` before opening a pull request.
 
+For native Windows changes, also install stable Rust and run:
+
+```powershell
+cargo fmt --manifest-path beam-native/Cargo.toml --all -- --check
+cargo test --manifest-path beam-native/Cargo.toml
+cargo clippy --manifest-path beam-native/Cargo.toml --all-targets -- -D warnings
+```
+
 Use clear commits such as `Add transfer acceptance prompt` or `Fix duplicate file selection`.
 
 ## Pull requests

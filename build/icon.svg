@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="100" y1="70" x2="930" y2="970">
+      <stop stop-color="#191b27"/>
+      <stop offset="1" stop-color="#090a0f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="230" y1="200" x2="790" y2="840">
+      <stop stop-color="#f4f0ff"/>
+      <stop offset=".42" stop-color="#b7a6ff"/>
+      <stop offset="1" stop-color="#7358e5"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="18" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect x="26" y="26" width="972" height="972" rx="244" fill="url(#bg)" stroke="#fff" stroke-opacity=".12" stroke-width="16"/>
+  <path d="M602 252c-172 0-312 140-312 312s140 312 312 312c70 0 134-23 186-62-154 1-278-124-278-278 0-120 76-223 182-262-29-14-59-22-90-22Z" fill="url(#accent)" filter="url(#glow)"/>
+  <ellipse cx="512" cy="535" rx="375" ry="138" fill="none" stroke="#a994ff" stroke-opacity=".52" stroke-width="20" transform="rotate(-24 512 535)"/>
+  <path d="m721 262 28 77 77 28-77 28-28 77-28-77-77-28 77-28Z" fill="#fff" filter="url(#glow)"/>
+</svg>

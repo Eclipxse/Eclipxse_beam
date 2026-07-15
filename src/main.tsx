@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles.css';
 
+if (window.location.protocol === 'file:') {
+  document.documentElement.classList.add('desktop');
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

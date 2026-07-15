@@ -1,0 +1,871 @@
+import { Theme, Metrics } from "design-tokens.slint";
+import { ListView } from "std-widgets.slint";
+import {
+    WindowControl, SegmentTab, IconButton, PrimaryButton, QuietButton,
+    SectionLabel, DropCommand, FileRow, DeviceRow, ProgressBar, TransferRow
+} from "components.slint";
+
+export struct FileEntry {
+    name: string,
+    size: string,
+    kind: int,
+}
+
+export struct TransferEntry {
+    name: string,
+    detail: string,
+    percent: string,
+    progress: float,
+    kind: int,
+}
+
+component BrandMark inherits Rectangle {
+    width: 34px;
+    height: 34px;
+    background: #00000000;
+
+    Rectangle {
+        x: 5px;
+        y: 5px;
+        width: 24px;
+        height: 24px;
+        border-radius: 12px;
+        background: #00000000;
+        border-width: 2px;
+        border-color: Theme.cream;
+    }
+    Rectangle {
+        x: 2px;
+        y: 16px;
+        width: 30px;
+        height: 2px;
+        border-radius: 1px;
+        background: Theme.caramel;
+    }
+}
+
+component AppTitleBar inherits Rectangle {
+    in property <int> current-view: 0;
+    in property <string> status-text: "Ready";
+    callback navigate(int);
+    callback close-requested;
+    callback minimize-requested;
+    callback maximize-requested;
+    callback drag-requested;
+
+    height: Metrics.title-height;
+    background: Theme.canvas;
+
+    drag-zone := TouchArea {
+        width: parent.width - 252px;
+        height: parent.height;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                root.drag-requested();
+            }
+        }
+        double-clicked => { root.maximize-requested(); }
+    }
+
+    Rectangle {
+        x: 26px;
+        y: 19px;
+        width: 220px;
+        height: 34px;
+        HorizontalLayout {
+            spacing: 12px;
+            BrandMark { }
+            Text {
+                text: "Eclipxse Beam";
+                color: Theme.text;
+                font-family: "Segoe UI";
+                font-size: 15px;
+                font-weight: 600;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: 15px;
+        width: 252px;
+        height: 42px;
+        border-radius: Metrics.radius-small;
+        background: Theme.surface-soft;
+        HorizontalLayout {
+            spacing: 4px;
+            padding-left: 2px;
+            padding-right: 2px;
+            SegmentTab {
+                label: "Send";
+                selected: root.current-view == 0 || root.current-view == 2;
+                clicked => { root.navigate(0); }
+            }
+            SegmentTab {
+                label: "Receive";
+                selected: root.current-view == 1;
+                clicked => { root.navigate(1); }
+            }
+        }
+    }
+
+    Rectangle {
+        x: parent.width - 332px;
+        y: 16px;
+        width: 322px;
+        height: 40px;
+        HorizontalLayout {
+            spacing: 5px;
+
+            Rectangle {
+                width: 86px;
+                HorizontalLayout {
+                    padding-left: 5px;
+                    spacing: 8px;
+                    Rectangle {
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 4px;
+                        background: Theme.sage;
+                    }
+                    Text {
+                        text: root.status-text;
+                        color: Theme.text-muted;
+                        font-family: "Segoe UI";
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            IconButton { glyph: "⚙"; }
+            Rectangle { width: 8px; }
+            WindowControl {
+                glyph: "−";
+                clicked => { root.minimize-requested(); }
+            }
+            WindowControl {
+                glyph: "□";
+                clicked => { root.maximize-requested(); }
+            }
+            WindowControl {
+                glyph: "×";
+                danger: true;
+                clicked => { root.close-requested(); }
+            }
+        }
+    }
+}
+
+component SendView inherits Rectangle {
+    in property <[FileEntry]> selected-files;
+    in property <string> selection-summary: "No files selected";
+    in property <bool> has-files: false;
+    in property <bool> device-connected: false;
+    in property <string> device-name: "Phone companion";
+    in property <string> device-detail: "Open Receive to pair";
+    callback choose-files;
+    callback clear-files;
+    callback remove-file(int);
+    callback show-pairing;
+    callback start-transfer;
+
+    min-height: 688px;
+    max-width: 10000px;
+    max-height: 10000px;
+    background: Theme.canvas;
+
+    VerticalLayout {
+        width: parent.width;
+        height: parent.height;
+        padding-left: Metrics.content-padding;
+        padding-right: Metrics.content-padding;
+        padding-top: 20px;
+        spacing: 0px;
+
+        DropCommand { choose-files => { root.choose-files(); } }
+        Rectangle { height: 16px; }
+
+        Rectangle {
+            height: 300px;
+            background: #00000000;
+            clip: true;
+
+            if root.selected-files.length == 0 : Rectangle {
+                width: parent.width;
+                height: parent.height;
+                background: #00000000;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 7px;
+                    Text {
+                        text: "Your beam queue is empty";
+                        color: Theme.text;
+                        font-family: "Segoe UI";
+                        font-size: 16px;
+                        font-weight: 600;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: "Choose files above — they stay on this computer until your phone requests them.";
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            ListView {
+                width: parent.width;
+                height: parent.height;
+                for file[index] in root.selected-files : FileRow {
+                    thumb-kind: file.kind;
+                    name: file.name;
+                    size: file.size;
+                    show-separator: index + 1 < root.selected-files.length;
+                    remove => { root.remove-file(index); }
+                }
+            }
+        }
+
+        SectionLabel {
+            label: "NEARBY DEVICES";
+            meta: root.device-connected ? "1 connected" : "Pair with QR";
+        }
+
+        DeviceRow {
+            name: root.device-name;
+            detail: root.device-detail;
+            selected: root.device-connected;
+            selected-changed => { root.show-pairing(); }
+        }
+
+        Rectangle {
+            height: 76px;
+            border-radius: Metrics.radius;
+            background: Theme.surface-soft;
+
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 10px;
+                spacing: 12px;
+                Text {
+                    text: root.selection-summary;
+                    color: Theme.text;
+                    font-family: "Segoe UI";
+                    font-size: 15px;
+                    font-weight: 500;
+                    vertical-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                QuietButton {
+                    label: "Clear";
+                    clicked => { root.clear-files(); }
+                }
+                PrimaryButton {
+                    width: 174px;
+                    label: root.device-connected ? "Beam files" : "Pair phone";
+                    icon: "→";
+                    enabled: root.has-files;
+                    clicked => {
+                        if root.device-connected {
+                            root.start-transfer();
+                        } else {
+                            root.show-pairing();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+component StepRow inherits HorizontalLayout {
+    in property <string> number;
+    in property <string> title;
+    in property <string> detail;
+
+    height: 68px;
+    spacing: 14px;
+
+    Rectangle {
+        width: 30px;
+        height: 30px;
+        border-radius: 15px;
+        background: Theme.accent-soft;
+        Text {
+            text: root.number;
+            color: Theme.caramel;
+            font-family: "Segoe UI";
+            font-size: 11px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    VerticalLayout {
+        spacing: 3px;
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-family: "Segoe UI";
+            font-size: 13px;
+            font-weight: 600;
+            vertical-alignment: bottom;
+        }
+        Text {
+            text: root.detail;
+            color: Theme.text-faint;
+            font-family: "Segoe UI";
+            font-size: 10px;
+            vertical-alignment: top;
+        }
+    }
+}
+
+component ReceiveView inherits Rectangle {
+    in property <string> pairing-code: "STARTING";
+    in property <string> pairing-url: "Starting local companion…";
+    in property <image> pairing-qr;
+    in property <bool> device-connected: false;
+    in property <bool> lan-reachable: true;
+    in property <string> device-name: "your phone";
+    min-height: 688px;
+    max-width: 10000px;
+    max-height: 10000px;
+    background: Theme.canvas;
+
+    VerticalLayout {
+        width: parent.width;
+        height: parent.height;
+        padding-left: Metrics.content-padding;
+        padding-right: Metrics.content-padding;
+        padding-top: 20px;
+        spacing: 0px;
+
+        Rectangle {
+            height: 104px;
+            border-radius: Metrics.radius;
+            background: Theme.surface-soft;
+            HorizontalLayout {
+                padding-left: 24px;
+                padding-right: 22px;
+                spacing: 16px;
+                Text {
+                    text: "↓";
+                    color: Theme.cream;
+                    font-family: "Segoe UI Symbol";
+                    font-size: 30px;
+                    vertical-alignment: center;
+                }
+                VerticalLayout {
+                    spacing: 5px;
+                    Text {
+                        text: "Receive files";
+                        color: Theme.text;
+                        font-family: "Segoe UI";
+                        font-size: 19px;
+                        font-weight: 600;
+                        vertical-alignment: bottom;
+                    }
+                    Text {
+                        text: "Scan the code with your phone camera";
+                        color: Theme.text-muted;
+                        font-family: "Segoe UI";
+                        font-size: 12px;
+                        vertical-alignment: top;
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                VerticalLayout {
+                    spacing: 4px;
+                    Text {
+                        text: "SESSION CODE";
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 9px;
+                        font-weight: 700;
+                        letter-spacing: 1px;
+                        horizontal-alignment: right;
+                        vertical-alignment: bottom;
+                    }
+                    Text {
+                        text: root.pairing-code;
+                        color: Theme.cream;
+                        font-family: "Consolas";
+                        font-size: 18px;
+                        font-weight: 600;
+                        letter-spacing: 1.2px;
+                        horizontal-alignment: right;
+                        vertical-alignment: top;
+                    }
+                }
+            }
+        }
+
+        Rectangle { height: 16px; }
+
+        HorizontalLayout {
+            vertical-stretch: 1;
+            max-height: 10000px;
+            spacing: 30px;
+
+            Rectangle {
+                horizontal-stretch: 1;
+                max-width: 10000px;
+                background: #00000000;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 14px;
+                    HorizontalLayout {
+                        height: 252px;
+                        alignment: center;
+                        Rectangle {
+                            width: 252px;
+                            height: 252px;
+                            border-radius: 16px;
+                            background: Theme.cream;
+                            Image {
+                                x: 13px;
+                                y: 13px;
+                                width: 226px;
+                                height: 226px;
+                                source: root.pairing-qr;
+                                image-fit: contain;
+                            }
+                        }
+                    }
+                    Text {
+                        text: root.device-connected ? root.device-name + " is connected" : (root.lan-reachable ? "Waiting for your phone" : "No Wi-Fi network found");
+                        color: Theme.text;
+                        font-family: "Segoe UI";
+                        font-size: 15px;
+                        font-weight: 600;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: root.device-connected ? "You can send or receive files now" : (root.lan-reachable ? "Keep both devices on the same Wi-Fi" : "Connect this computer to Wi-Fi and restart Beam");
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            Rectangle {
+                width: 1px;
+                background: Theme.divider;
+            }
+
+            Rectangle {
+                width: 410px;
+                background: #00000000;
+                VerticalLayout {
+                    spacing: 0px;
+                    SectionLabel { label: "HOW IT WORKS"; }
+                    StepRow { number: "1"; title: "Scan the code"; detail: "Open the local Beam companion."; }
+                    StepRow { number: "2"; title: "Choose your files"; detail: "Pick anything from your phone."; }
+                    StepRow { number: "3"; title: "Accept the transfer"; detail: "Confirm it here and keep both devices close."; }
+                    Rectangle {
+                        height: 82px;
+                        border-radius: Metrics.radius;
+                        background: Theme.surface-soft;
+                        HorizontalLayout {
+                            padding-left: 16px;
+                            padding-right: 16px;
+                            spacing: 12px;
+                            Text {
+                                text: "⌁";
+                                color: Theme.sage;
+                                font-family: "Segoe UI Symbol";
+                                font-size: 18px;
+                                vertical-alignment: center;
+                            }
+                            VerticalLayout {
+                                spacing: 3px;
+                                Text {
+                                    text: "Private session";
+                                    color: Theme.text;
+                                    font-family: "Segoe UI";
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    vertical-alignment: bottom;
+                                }
+                                Text {
+                                    text: "Token-protected on your local Wi-Fi.";
+                                    color: Theme.text-faint;
+                                    font-family: "Segoe UI";
+                                    font-size: 10px;
+                                    vertical-alignment: top;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 76px;
+            border-radius: Metrics.radius;
+            background: Theme.success-soft;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                spacing: 10px;
+                Rectangle {
+                    width: 9px;
+                    height: 9px;
+                    border-radius: 5px;
+                    background: Theme.sage;
+                }
+                Text {
+                    text: root.device-connected ? root.device-name + " connected" : "Waiting for a device";
+                    color: Theme.text;
+                    font-family: "Segoe UI";
+                    font-size: 13px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                Text {
+                    text: root.pairing-url;
+                    color: Theme.text-faint;
+                    font-family: "Segoe UI";
+                    font-size: 10px;
+                    overflow: elide;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+component TransferView inherits Rectangle {
+    in property <[TransferEntry]> transfers;
+    in property <string> overall-title: "Waiting for your phone";
+    in property <string> overall-detail: "Open the companion to begin";
+    in property <string> overall-percent: "0%";
+    in property <float> overall-progress: 0;
+    in property <string> queue-meta: "No transfers";
+    in property <bool> device-connected: false;
+    in property <string> device-name: "Phone companion";
+    in property <string> device-detail: "Not connected";
+    callback show-pairing;
+    callback back-to-files;
+    min-height: 688px;
+    max-width: 10000px;
+    max-height: 10000px;
+    background: Theme.canvas;
+
+    VerticalLayout {
+        width: parent.width;
+        height: parent.height;
+        padding-left: Metrics.content-padding;
+        padding-right: Metrics.content-padding;
+        padding-top: 20px;
+        spacing: 0px;
+
+        Rectangle {
+            height: 122px;
+            border-radius: Metrics.radius;
+            background: Theme.surface-soft;
+            VerticalLayout {
+                padding: 18px;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    VerticalLayout {
+                        spacing: 4px;
+                        Text {
+                            text: root.overall-title;
+                            color: Theme.text;
+                            font-family: "Segoe UI";
+                            font-size: 17px;
+                            font-weight: 650;
+                            vertical-alignment: bottom;
+                        }
+                        Text {
+                            text: root.overall-detail;
+                            color: Theme.text-muted;
+                            font-family: "Segoe UI";
+                            font-size: 11px;
+                            vertical-alignment: top;
+                        }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text {
+                        text: root.overall-percent;
+                        color: Theme.caramel;
+                        font-family: "Segoe UI";
+                        font-size: 16px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                }
+                ProgressBar { value: root.overall-progress; height: 7px; }
+                HorizontalLayout {
+                    Text {
+                        text: root.device-connected ? "Local connection active" : "Waiting for companion";
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 10px;
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text {
+                        text: "Live progress";
+                        color: Theme.text-faint;
+                        font-family: "Segoe UI";
+                        font-size: 10px;
+                    }
+                }
+            }
+        }
+
+        Rectangle { height: 14px; }
+
+        HorizontalLayout {
+            vertical-stretch: 1;
+            max-height: 10000px;
+            spacing: 26px;
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                max-width: 10000px;
+                spacing: 0px;
+                SectionLabel { label: "TRANSFER QUEUE"; meta: root.queue-meta; }
+                ListView {
+                    vertical-stretch: 1;
+                    max-height: 10000px;
+                    for transfer[index] in root.transfers : TransferRow {
+                        thumb-kind: transfer.kind;
+                        name: transfer.name;
+                        detail: transfer.detail;
+                        percent: transfer.percent;
+                        progress: transfer.progress;
+                        show-separator: index + 1 < root.transfers.length;
+                    }
+                }
+            }
+
+            Rectangle {
+                width: 1px;
+                background: Theme.divider;
+            }
+
+            VerticalLayout {
+                width: 360px;
+                spacing: 0px;
+                SectionLabel { label: "DEVICE"; meta: "Same Wi-Fi"; }
+                DeviceRow {
+                    height: 100px;
+                    name: root.device-name;
+                    detail: root.device-detail;
+                    selected: root.device-connected;
+                    selected-changed => { root.show-pairing(); }
+                }
+                Rectangle {
+                    height: 70px;
+                    HorizontalLayout {
+                        spacing: 16px;
+                        Text {
+                            text: "Transport";
+                            color: Theme.text-faint;
+                            font-family: "Segoe UI";
+                            font-size: 11px;
+                            vertical-alignment: center;
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                        Text {
+                            text: "Local HTTP";
+                            color: Theme.text;
+                            font-family: "Segoe UI";
+                            font-size: 12px;
+                            font-weight: 600;
+                            vertical-alignment: center;
+                        }
+                    }
+                    Rectangle {
+                        y: parent.height - 1px;
+                        width: parent.width;
+                        height: 1px;
+                        background: Theme.divider;
+                    }
+                }
+                Rectangle {
+                    height: 70px;
+                    HorizontalLayout {
+                        spacing: 16px;
+                        Text {
+                            text: "Access";
+                            color: Theme.text-faint;
+                            font-family: "Segoe UI";
+                            font-size: 11px;
+                            vertical-alignment: center;
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                        Text {
+                            text: "Private link";
+                            color: Theme.text;
+                            font-family: "Consolas";
+                            font-size: 12px;
+                            font-weight: 600;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 76px;
+            border-radius: Metrics.radius;
+            background: Theme.surface-soft;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 10px;
+                spacing: 10px;
+                Text {
+                    text: "Direct transfer on your local network";
+                    color: Theme.text-muted;
+                    font-family: "Segoe UI";
+                    font-size: 12px;
+                    vertical-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                QuietButton {
+                    label: "Back";
+                    clicked => { root.back-to-files(); }
+                }
+                PrimaryButton {
+                    width: 154px;
+                    label: "Show QR";
+                    icon: "⌁";
+                    clicked => { root.show-pairing(); }
+                }
+            }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    in-out property <int> current-view: 0;
+    in property <[FileEntry]> selected-files;
+    in property <[TransferEntry]> transfers;
+    in property <string> selection-summary: "No files selected";
+    in property <bool> has-files: false;
+    in property <bool> device-connected: false;
+    in property <string> device-name: "Phone companion";
+    in property <string> device-detail: "Open Receive to pair";
+    in property <string> pairing-code: "STARTING";
+    in property <string> pairing-url: "Starting local companion…";
+    in property <image> pairing-qr;
+    in property <bool> lan-reachable: true;
+    in property <string> status-text: "Ready";
+    in property <string> overall-title: "Waiting for your phone";
+    in property <string> overall-detail: "Open the companion to begin";
+    in property <string> overall-percent: "0%";
+    in property <float> overall-progress: 0;
+    in property <string> queue-meta: "No transfers";
+    callback choose-files;
+    callback clear-files;
+    callback remove-file(int);
+    callback start-transfer;
+    callback close-requested;
+    callback minimize-requested;
+    callback maximize-requested;
+    callback drag-requested;
+    callback center-requested;
+
+    title: "Eclipxse Beam";
+    no-frame: true;
+    resize-border-width: 7px;
+    background: Theme.backdrop;
+    preferred-width: 1180px;
+    preferred-height: 760px;
+    min-width: 1040px;
+    min-height: 720px;
+    default-font-family: "Segoe UI";
+    default-font-size: 12px;
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: Theme.canvas;
+        border-width: 1px;
+        border-color: Theme.edge;
+
+        AppTitleBar {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            current-view: root.current-view;
+            status-text: root.status-text;
+            navigate(view) => { root.current-view = view; }
+            close-requested => { root.close-requested(); }
+            minimize-requested => { root.minimize-requested(); }
+            maximize-requested => { root.maximize-requested(); }
+            drag-requested => { root.drag-requested(); }
+        }
+
+        Rectangle {
+            x: 0px;
+            y: Metrics.title-height;
+            width: parent.width;
+            height: parent.height - Metrics.title-height;
+            background: Theme.canvas;
+
+            SendView {
+                visible: root.current-view == 0;
+                width: parent.width;
+                height: parent.height;
+                selected-files: root.selected-files;
+                selection-summary: root.selection-summary;
+                has-files: root.has-files;
+                device-connected: root.device-connected;
+                device-name: root.device-name;
+                device-detail: root.device-detail;
+                choose-files => { root.choose-files(); }
+                clear-files => { root.clear-files(); }
+                remove-file(index) => { root.remove-file(index); }
+                show-pairing => { root.current-view = 1; }
+                start-transfer => {
+                    root.start-transfer();
+                    root.current-view = 2;
+                }
+            }
+            ReceiveView {
+                visible: root.current-view == 1;
+                width: parent.width;
+                height: parent.height;
+                pairing-code: root.pairing-code;
+                pairing-url: root.pairing-url;
+                pairing-qr: root.pairing-qr;
+                device-connected: root.device-connected;
+                lan-reachable: root.lan-reachable;
+                device-name: root.device-name;
+            }
+            TransferView {
+                visible: root.current-view == 2;
+                width: parent.width;
+                height: parent.height;
+                transfers: root.transfers;
+                overall-title: root.overall-title;
+                overall-detail: root.overall-detail;
+                overall-percent: root.overall-percent;
+                overall-progress: root.overall-progress;
+                queue-meta: root.queue-meta;
+                device-connected: root.device-connected;
+                device-name: root.device-name;
+                device-detail: root.device-detail;
+                show-pairing => { root.current-view = 1; }
+                back-to-files => { root.current-view = 0; }
+            }
+        }
+    }
+
+    init => { root.center-requested(); }
+}

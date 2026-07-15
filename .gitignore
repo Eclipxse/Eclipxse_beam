@@ -1,5 +1,6 @@
 node_modules
 dist
+release
 .vite
 coverage
 *.local
@@ -9,3 +10,5 @@ Thumbs.db
 .idea
 .vscode/*
 !.vscode/extensions.json
+beam-native/target
+beam-native/captures

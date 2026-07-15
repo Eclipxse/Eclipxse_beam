@@ -7,21 +7,20 @@ export function BeamLogo({ compact = false }: BeamLogoProps) {
     <div className="brand" aria-label="Eclipxse Beam">
       <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">
         <defs>
-          <linearGradient id="brand-beam" x1="10" y1="10" x2="54" y2="54">
-            <stop stopColor="#c6b6ff" />
-            <stop offset="0.5" stopColor="#7c5cff" />
-            <stop offset="1" stopColor="#51e5ff" />
+          <linearGradient id="beam-mark-bg" x1="8" y1="5" x2="58" y2="61">
+            <stop stopColor="#171924" />
+            <stop offset="1" stopColor="#0c0d13" />
+          </linearGradient>
+          <linearGradient id="beam-mark-accent" x1="15" y1="14" x2="49" y2="51">
+            <stop stopColor="#f4f0ff" />
+            <stop offset="0.42" stopColor="#b7a6ff" />
+            <stop offset="1" stopColor="#7d65ec" />
           </linearGradient>
         </defs>
-        <rect width="64" height="64" rx="18" fill="#111024" />
-        <path
-          d="M39.7 9.5A23.7 23.7 0 1 0 54 43.7 20 20 0 1 1 39.7 9.5Z"
-          fill="url(#brand-beam)"
-        />
-        <path
-          d="m39.5 23.5 2.2 6.1 6.1 2.2-6.1 2.2-2.2 6.1-2.2-6.1-6.1-2.2 6.1-2.2 2.2-6.1Z"
-          fill="#fff"
-        />
+        <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#beam-mark-bg)" stroke="#ffffff" strokeOpacity=".1" />
+        <path d="M37.5 16.2A18.3 18.3 0 1 0 49 42.8a15.6 15.6 0 1 1-11.5-26.6Z" fill="url(#beam-mark-accent)" />
+        <ellipse cx="32" cy="32" rx="23" ry="9" fill="none" stroke="#a994ff" strokeOpacity=".5" strokeWidth="1.3" transform="rotate(-24 32 32)" />
+        <path d="m44.5 17.5 1.4 3.8 3.8 1.4-3.8 1.4-1.4 3.8-1.4-3.8-3.8-1.4 3.8-1.4Z" fill="#fff" />
       </svg>
       {!compact && (
         <span className="brand__wordmark">

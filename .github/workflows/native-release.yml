@@ -1,0 +1,67 @@
+name: Native Windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "beam-native/**"
+      - ".github/workflows/native-release.yml"
+  push:
+    branches: [main]
+    tags: ["native-v*"]
+    paths:
+      - "beam-native/**"
+      - ".github/workflows/native-release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Native Windows x64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Select stable Rust
+        shell: pwsh
+        run: rustup default stable
+
+      - name: Test native backend
+        run: cargo test --manifest-path beam-native/Cargo.toml
+
+      - name: Lint native app
+        run: cargo clippy --manifest-path beam-native/Cargo.toml --all-targets -- -D warnings
+
+      - name: Build optimized native app
+        run: cargo build --release --manifest-path beam-native/Cargo.toml
+
+      - name: Package executable and checksum
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force native-release | Out-Null
+          Copy-Item beam-native/target/release/eclipxse-beam-native.exe native-release/Eclipxse-Beam-Native-Windows-x64.exe
+          $hash = (Get-FileHash native-release/Eclipxse-Beam-Native-Windows-x64.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Eclipxse-Beam-Native-Windows-x64.exe" | Set-Content native-release/SHA256SUMS.txt
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Eclipxse-Beam-Native-Windows-x64
+          path: native-release/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish tagged release assets
+        if: startsWith(github.ref, 'refs/tags/native-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$env:GITHUB_REF_NAME" 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "$env:GITHUB_REF_NAME" --title "Eclipxse Beam Native $($env:GITHUB_REF_NAME -replace '^native-v', 'v')" --generate-notes
+          }
+          gh release upload "$env:GITHUB_REF_NAME" native-release/Eclipxse-Beam-Native-Windows-x64.exe native-release/SHA256SUMS.txt --clobber
