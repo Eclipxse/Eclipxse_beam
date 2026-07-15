@@ -1,27 +1,37 @@
 export global Theme {
-    in property <brush> canvas: #0c0d11;
-    in property <brush> sidebar: #0f1015;
-    in property <brush> surface: #14161c;
-    in property <brush> surface-raised: #191b23;
-    in property <brush> surface-hover: #20232d;
-    in property <brush> line: #292c36;
-    in property <brush> line-soft: #20232b;
-    in property <brush> text: #f2f2f4;
-    in property <brush> text-muted: #9297a3;
-    in property <brush> text-faint: #646a76;
-    in property <brush> accent: #8b7cff;
-    in property <brush> accent-hover: #9d91ff;
-    in property <brush> accent-soft: #8b7cff20;
-    in property <brush> success: #68d7a1;
-    in property <brush> success-soft: #68d7a118;
-    in property <brush> danger: #ff7185;
-    in property <brush> danger-soft: #ff71851a;
-    in property <brush> warning: #e7b56a;
+    // Approved warm palette
+    in property <brush> cream: #f7f1de;
+    in property <brush> sage: #b0ba99;
+    in property <brush> caramel: #9d6638;
+    in property <brush> espresso: #4e220f;
+
+    // Espresso-derived surfaces keep the palette usable in a dark desktop UI.
+    in property <brush> backdrop: #120a06;
+    in property <brush> canvas: #1a0e09;
+    in property <brush> surface: #21120c;
+    in property <brush> surface-soft: #f7f1de08;
+    in property <brush> surface-hover: #f7f1de0d;
+    in property <brush> surface-active: #9d663824;
+    in property <brush> edge: #f7f1de1e;
+    in property <brush> divider: #f7f1de12;
+
+    in property <brush> text: #f7f1de;
+    in property <brush> text-muted: #c2b9a6;
+    in property <brush> text-faint: #817568;
+    in property <brush> accent: #9d6638;
+    in property <brush> accent-hover: #b77742;
+    in property <brush> accent-soft: #9d663826;
+    in property <brush> success: #b0ba99;
+    in property <brush> success-soft: #b0ba991c;
+    in property <brush> danger: #d98d78;
+    in property <brush> danger-soft: #d98d7818;
 }
 
 export global Metrics {
     in property <length> radius-small: 8px;
     in property <length> radius: 12px;
-    in property <length> radius-large: 16px;
+    in property <length> radius-large: 18px;
+    in property <length> title-height: 72px;
+    in property <length> content-padding: 34px;
     in property <length> control-height: 42px;
 }
